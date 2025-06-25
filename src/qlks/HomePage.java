@@ -80,7 +80,7 @@ public class HomePage extends RoundedFrame {
         jMenuItem1.setText("jMenuItem1");
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Library management system ");
+        setTitle("Hotel management system ");
         setIconImage(new ImageIcon(getClass().getResource("/Icon/Title.png")).getImage());
         setUndecorated(true);
         setResizable(false);
@@ -118,9 +118,10 @@ public class HomePage extends RoundedFrame {
 
         displayUsername.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         displayUsername.setForeground(new java.awt.Color(255, 255, 255));
-        displayUsername.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        displayUsername.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         displayUsername.setText("      Username");
-        jPanel1.add(displayUsername, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 640, 190, 60));
+        displayUsername.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        jPanel1.add(displayUsername, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 640, 130, 60));
 
         Logo.setBackground(new java.awt.Color(252, 244, 234));
         Logo.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
@@ -216,7 +217,7 @@ public class HomePage extends RoundedFrame {
         jPanel2.add(close, new org.netbeans.lib.awtextra.AbsoluteConstraints(1140, 0, 60, 60));
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(950, 0, 250, 60));
+        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(940, 0, 250, 60));
 
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 0, 250, 60));

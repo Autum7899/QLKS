@@ -1,154 +1,187 @@
 package dao;
 
-import dto.Booking;
 import qlks.DatabaseConnection;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
-/**
- * DAO cho thực thể Đặt phòng (Booking).
- * Quản lý các nghiệp vụ tạo, sửa, hủy, check-in, check-out.
- */
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+import java.sql.*;
+import javax.swing.JOptionPane;
+
 public class BookingDAO {
 
-    /**
-     * Tạo một phiếu đặt phòng mới. 
-     * @param booking Đối tượng Booking chứa thông tin.
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean createBooking(Booking booking) throws SQLException {
-        String sql = "INSERT INTO bookings(RoomId, CustomerId, CheckInDate, CheckOutDate, Status, Notes) VALUES (?, ?, ?, ?, ?, ?)";
+    public static void loadBookingsToTable(JTable table) {
+        String[] columnNames = {"Mã Booking", "Khách hàng", "Phòng", "Ngày nhận", "Ngày trả", "Trạng thái"};
+        DefaultTableModel model = new DefaultTableModel(columnNames, 0);
+
+        String sql = "SELECT b.BookingId, c.FullName, r.RoomNumber, b.CheckInDate, b.CheckOutDate, b.Status " +
+                     "FROM bookings b " +
+                     "JOIN customers c ON b.CustomerId = c.CustomerId " +
+                     "JOIN rooms r ON b.RoomId = r.RoomId";
+
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setInt(1, booking.getRoomId());
-            ps.setInt(2, booking.getCustomerId());
-            ps.setDate(3, new java.sql.Date(booking.getCheckInDate().getTime()));
-            ps.setDate(4, new java.sql.Date(booking.getCheckOutDate().getTime()));
-            ps.setString(5, "Đã đặt"); // Trạng thái ban đầu
-            ps.setString(6, booking.getNotes());
-            
-            return ps.executeUpdate() > 0;
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                int bookingId = rs.getInt("BookingId");
+                String customerName = rs.getString("FullName");
+                String roomNumber = rs.getString("RoomNumber");
+                Date checkIn = rs.getDate("CheckInDate");
+                Date checkOut = rs.getDate("CheckOutDate");
+                String status = rs.getString("Status");
+
+                Object[] row = {bookingId, customerName, roomNumber, checkIn, checkOut, status};
+                model.addRow(row);
+            }
+
+            table.setModel(model);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
-
-    /**
-     * Cập nhật thông tin một phiếu đặt phòng. 
-     * @param booking Đối tượng Booking chứa thông tin mới.
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean updateBooking(Booking booking) throws SQLException {
-        String sql = "UPDATE bookings SET RoomId = ?, CustomerId = ?, CheckInDate = ?, CheckOutDate = ?, Notes = ? WHERE BookingId = ?";
-        // Các trường khác như Status, TotalAmount sẽ được cập nhật bởi các nghiệp vụ riêng.
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
-            ps.setInt(1, booking.getRoomId());
-            ps.setInt(2, booking.getCustomerId());
-            ps.setDate(3, new java.sql.Date(booking.getCheckInDate().getTime()));
-            ps.setDate(4, new java.sql.Date(booking.getCheckOutDate().getTime()));
-            ps.setString(5, booking.getNotes());
-            ps.setInt(6, booking.getBookingId());
-
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
-     * Hủy một phiếu đặt phòng. 
-     * @param bookingId ID của booking cần hủy.
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean cancelBooking(int bookingId) throws SQLException {
-        return updateBookingStatus(bookingId, "Đã hủy");
-    }
-
-    /**
-     * Cập nhật trạng thái nhận phòng (Check-in). 
-     * @param bookingId ID của booking.
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean checkIn(int bookingId) throws SQLException {
-        String sql = "UPDATE bookings SET Status = 'Đang có khách', ActualCheckInDate = NOW() WHERE BookingId = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, bookingId);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
-     * Cập nhật trạng thái trả phòng (Check-out). 
-     * @param bookingId ID của booking.
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean checkOut(int bookingId) throws SQLException {
-        String sql = "UPDATE bookings SET Status = 'Đã trả phòng', ActualCheckOutDate = NOW() WHERE BookingId = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, bookingId);
-            return ps.executeUpdate() > 0;
-        }
-    }
-    
-    /**
-     * Phương thức chung để cập nhật trạng thái của một booking.
-     * @param bookingId ID booking.
-     * @param newStatus Trạng thái mới.
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean updateBookingStatus(int bookingId, String newStatus) throws SQLException {
-        String sql = "UPDATE bookings SET Status = ? WHERE BookingId = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newStatus);
-            ps.setInt(2, bookingId);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    /**
-     * Lấy danh sách booking theo trạng thái.
-     * @param status Trạng thái cần lọc.
-     * @return List<Booking>
-     * @throws SQLException
-     */
-    public List<Booking> getBookingsByStatus(String status) throws SQLException {
-        List<Booking> bookings = new ArrayList<>();
-        String sql = "SELECT * FROM bookings WHERE Status = ? ORDER BY CheckInDate";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, status);
-            try (ResultSet rs = ps.executeQuery()) {
-                while(rs.next()){
-                    bookings.add(mapResultSetToBooking(rs));
-                }
+    public static void select(JTable table){
+        table.getSelectionModel().addListSelectionListener(e -> {
+        if (!e.getValueIsAdjusting()) {
+            int selectedRow = table.getSelectedRow();
+            if (selectedRow >= 0) {
+                Object value = table.getValueAt(selectedRow, 0);
+                int bookingId = Integer.parseInt(value.toString());
+                System.out.println("BookingId được chọn: " + bookingId);
             }
         }
-        return bookings;
+    }); 
     }
-    
-    private Booking mapResultSetToBooking(ResultSet rs) throws SQLException {
-        Booking booking = new Booking();
-        booking.setBookingId(rs.getInt("BookingId"));
-        booking.setRoomId(rs.getInt("RoomId"));
-        booking.setCustomerId(rs.getInt("CustomerId"));
-        booking.setCheckInDate(rs.getDate("CheckInDate"));
-        booking.setCheckOutDate(rs.getDate("CheckOutDate"));
-        booking.setActualCheckInDate(rs.getTimestamp("ActualCheckInDate"));
-        booking.setActualCheckOutDate(rs.getTimestamp("ActualCheckOutDate"));
-        booking.setBookingDate(rs.getTimestamp("BookingDate"));
-        booking.setStatus(rs.getString("Status"));
-        booking.setTotalAmount(rs.getBigDecimal("TotalAmount"));
-        booking.setPaymentStatus(rs.getString("PaymentStatus"));
-        booking.setNotes(rs.getString("Notes"));
-        return booking;
+        public static void checkIn(JTable table) {
+        int row = table.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
+        return;
+    }
+
+    String status = table.getValueAt(row, 5).toString(); // Cột 5 là Status
+    if (status.equalsIgnoreCase("Cancelled") || status.equalsIgnoreCase("CheckedIn") || status.equalsIgnoreCase("CheckedOut")) {
+        JOptionPane.showMessageDialog(null, "Không thể nhận phòng với trạng thái: " + status);
+        return;
+    }
+
+    int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
+
+    String sql = "UPDATE bookings SET ActualCheckInDate = NOW(), Status = 'CheckedIn' WHERE BookingId = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setInt(1, bookingId);
+        stmt.executeUpdate();
+
+        JOptionPane.showMessageDialog(null, "Nhận phòng thành công!");
+        loadBookingsToTable(table);
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi nhận phòng: " + e.getMessage());
+    }
+    }
+
+    // Trả phòng
+    public static void checkOut(JTable table) {
+        int row = table.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
+        return;
+    }
+
+    String status = table.getValueAt(row, 5).toString();
+    if (status.equalsIgnoreCase("Cancelled")) {
+        JOptionPane.showMessageDialog(null, "Đặt phòng đã bị hủy, không thể trả phòng.");
+        return;
+    }
+    if (status.equalsIgnoreCase("CheckedOut")) {
+        JOptionPane.showMessageDialog(null, "Đã trả phòng trước đó.");
+        return;
+    }
+    if (!status.equalsIgnoreCase("CheckedIn")) {
+        JOptionPane.showMessageDialog(null, "Chỉ có thể trả phòng sau khi đã nhận phòng.");
+        return;
+    }
+
+    int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
+
+    String sql = "UPDATE bookings SET ActualCheckOutDate = NOW(), Status = 'CheckedOut' WHERE BookingId = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setInt(1, bookingId);
+        stmt.executeUpdate();
+
+        JOptionPane.showMessageDialog(null, "Trả phòng thành công!");
+        loadBookingsToTable(table);
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi trả phòng: " + e.getMessage());
+    }
+    }
+
+    // Hủy đặt
+    public static void cancelBooking(JTable table) {
+        int row = table.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
+        return;
+    }
+
+    String status = table.getValueAt(row, 5).toString();
+    if (status.equalsIgnoreCase("Cancelled") || status.equalsIgnoreCase("CheckedOut")) {
+        JOptionPane.showMessageDialog(null, "Không thể hủy đặt phòng đã hủy hoặc đã trả phòng.");
+        return;
+    }
+
+    int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
+
+    String sql = "UPDATE bookings SET Status = 'Cancelled' WHERE BookingId = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+        stmt.setInt(1, bookingId);
+        stmt.executeUpdate();
+
+        JOptionPane.showMessageDialog(null, "Hủy đặt phòng thành công!");
+        loadBookingsToTable(table);
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi hủy đặt phòng: " + e.getMessage());
     }
 }
+    public static void delete(JTable table) {
+    int row = table.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một dòng.");
+        return;
+    }
+
+    String status = table.getValueAt(row, 5).toString().toLowerCase();
+    if (!status.equals("cancelled") && !status.equals("checkedout")) {
+        JOptionPane.showMessageDialog(null, "Chỉ xóa khi trạng thái là 'Cancelled' hoặc 'CheckedOut'");
+        return;
+    }
+
+    int confirm = JOptionPane.showConfirmDialog(null, "Xác nhận xóa đặt phòng?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+    if (confirm != JOptionPane.YES_OPTION) return;
+
+    int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "DELETE FROM bookings WHERE BookingId = ?";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, bookingId);
+        stmt.executeUpdate();
+
+        JOptionPane.showMessageDialog(null, "Xóa thành công.");
+        loadBookingsToTable(table);
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi xóa: " + e.getMessage());
+    }
+}
+
+}
+
+

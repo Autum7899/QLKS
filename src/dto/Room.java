@@ -70,4 +70,8 @@ public class Room {
     public void setRoomDescription(String roomDescription) {
         this.roomDescription = roomDescription;
     }
+    @Override
+public String toString() {
+    return roomNumber + " - " + roomType; // Ví dụ: 101 - Deluxe
+}
 }

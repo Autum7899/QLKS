@@ -12,4 +12,5 @@ package qlks;
 public class UserInfo {
     public static String loggedInUsername;
     public static String loggedInRole;
+    public static int selected;
 }
