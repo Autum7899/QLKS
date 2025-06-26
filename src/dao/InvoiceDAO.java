@@ -6,6 +6,11 @@ import dto.Invoice;
 import qlks.DatabaseConnection;
 import java.sql.*;
 import java.math.BigDecimal;
+import java.time.temporal.ChronoUnit;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
 /**
  * DAO cho thực thể Hóa đơn (Invoice).
@@ -21,6 +26,83 @@ public class InvoiceDAO {
      * @return ID của hóa đơn vừa tạo, hoặc -1 nếu thất bại.
      * @throws SQLException
      */
+    public void showEstimateInvoice(int bookingId, JTable tblEstimateDetails, JLabel lblEstimateTotal) {
+    DefaultTableModel model = new DefaultTableModel();
+    model.setColumnIdentifiers(new Object[]{"Tên", "Số lượng", "Đơn giá", "Thành tiền"});
+    double total = 0;
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+
+        // ===== TIỀN PHÒNG =====
+        String sqlRoom = """
+            SELECT r.RoomNumber, r.PricePerNight, b.CheckInDate, b.CheckOutDate
+            FROM bookings b
+            JOIN rooms r ON b.RoomId = r.RoomId
+            WHERE b.BookingId = ?
+        """;
+
+        PreparedStatement stmtRoom = conn.prepareStatement(sqlRoom);
+        stmtRoom.setInt(1, bookingId);
+        ResultSet rsRoom = stmtRoom.executeQuery();
+
+        if (rsRoom.next()) {
+            String roomName = "Phòng " + rsRoom.getString("RoomNumber");
+            double unitPrice = rsRoom.getDouble("PricePerNight");
+            Date checkIn = rsRoom.getDate("CheckInDate");
+            Date checkOut = rsRoom.getDate("CheckOutDate");
+
+            long nights = ChronoUnit.DAYS.between(
+                checkIn.toLocalDate(), checkOut.toLocalDate()
+            );
+
+            double roomTotal = nights * unitPrice;
+            total += roomTotal;
+
+            model.addRow(new Object[]{
+                roomName,
+                nights + " đêm",
+                String.format("%,.0f", unitPrice),
+                String.format("%,.0f", roomTotal)
+            });
+        }
+
+        // ===== DỊCH VỤ =====
+        String sqlService = """
+            SELECT s.ServiceName, bs.Quantity, bs.PriceAtBooking
+            FROM booked_services bs
+            JOIN services s ON bs.ServiceId = s.ServiceId
+            WHERE bs.BookingId = ?
+        """;
+
+        PreparedStatement stmtService = conn.prepareStatement(sqlService);
+        stmtService.setInt(1, bookingId);
+        ResultSet rsService = stmtService.executeQuery();
+
+        while (rsService.next()) {
+            String serviceName = rsService.getString("ServiceName");
+            int quantity = rsService.getInt("Quantity");
+            double unitPrice = rsService.getDouble("PriceAtBooking");
+            double lineTotal = quantity * unitPrice;
+            total += lineTotal;
+
+            model.addRow(new Object[]{
+                serviceName,
+                quantity,
+                String.format("%,.0f", unitPrice),
+                String.format("%,.0f", lineTotal)
+            });
+        }
+
+        // Gán dữ liệu cho bảng và label tổng
+        tblEstimateDetails.setModel(model);
+        lblEstimateTotal.setText("Tạm tính: " + String.format("%,.0f", total) + " VNĐ");
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi tính hóa đơn tạm: " + e.getMessage());
+    }
+}
+
     public int createInvoiceFromBooking(int bookingId, int userId) throws SQLException {
         String roomChargeSql = "SELECT DATEDIFF(b.CheckOutDate, b.CheckInDate) * r.PricePerNight AS RoomCharge " +
                                "FROM bookings b JOIN rooms r ON b.RoomId = r.RoomId WHERE b.BookingId = ?";

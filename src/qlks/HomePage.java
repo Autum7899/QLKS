@@ -387,6 +387,9 @@ public class HomePage extends RoundedFrame {
 
     private void bookingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookingActionPerformed
         // TODO add your handling code here:
+        QLDatPhong dp = new QLDatPhong();
+            dp.setVisible(true);
+            this.dispose();
     }//GEN-LAST:event_bookingActionPerformed
 
     private void serviceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_serviceActionPerformed

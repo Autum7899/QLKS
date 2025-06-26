@@ -345,6 +345,7 @@ public class QLDatPhong extends RoundedFrame {
     private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed
         // TODO add your handling code here:
         BookingDAO.cancelBooking(tBooking);
+        tBooking.getColumnModel().getColumn(5).setCellRenderer(new StatusCellRenderer());
     }//GEN-LAST:event_btnCancelActionPerformed
 
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed

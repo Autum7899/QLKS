@@ -103,49 +103,58 @@ private void loadCustomers() {
 }
 private void add(){
     try {
-        // 1. Lấy chuỗi hiển thị đang chọn từ ComboBox
-        String roomDisplay = (String) cmbRoom.getSelectedItem();
-        String customerDisplay = (String) cmbCustomer.getSelectedItem();
+        // Lấy phòng và khách được chọn từ combo box
+        String roomStr = (String) cmbRoom.getSelectedItem();
+        Room selectedRoom = roomMap.get(roomStr);
 
-        // 2. Tra từ Map để lấy Room và Customer tương ứng
-        Room selectedRoom = roomMap.get(roomDisplay);
-        Customer selectedCustomer = customerMap.get(customerDisplay);
+        String customerStr = (String) cmbCustomer.getSelectedItem();
+        Customer selectedCustomer = customerMap.get(customerStr);
 
         if (selectedRoom == null || selectedCustomer == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn đầy đủ phòng và khách hàng.");
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn đầy đủ thông tin.");
             return;
         }
 
         int roomId = selectedRoom.getRoomId();
         int customerId = selectedCustomer.getCustomerId();
 
-        // 3. Lấy ngày từ JDateChooser
-        java.util.Date checkInUtil = jdcCheckIn.getDate();
-        java.util.Date checkOutUtil = jdcCheckOut.getDate();
+        // Lấy ngày
+        java.sql.Date checkIn = new java.sql.Date(jdcCheckIn.getDate().getTime());
+        java.sql.Date checkOut = new java.sql.Date(jdcCheckOut.getDate().getTime());
 
-        if (checkInUtil == null || checkOutUtil == null) {
-            JOptionPane.showMessageDialog(this, "Vui lòng chọn đầy đủ ngày nhận và ngày trả.");
-            return;
-        }
-
-        // 4. Chuyển sang java.sql.Date
-        java.sql.Date checkIn = new java.sql.Date(checkInUtil.getTime());
-        java.sql.Date checkOut = new java.sql.Date(checkOutUtil.getTime());
-
-        // 5. Thêm vào bảng bookings
         try (Connection conn = DatabaseConnection.getConnection()) {
-            String sql = "INSERT INTO bookings (RoomId, CustomerId, CheckInDate, CheckOutDate, Status, PaymentStatus) " +
-                         "VALUES (?, ?, ?, ?, 'Confirmed', 'Pending')";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, roomId);
-            stmt.setInt(2, customerId);
-            stmt.setDate(3, checkIn);
-            stmt.setDate(4, checkOut);
+            // 1. Kiểm tra trạng thái phòng
+            String checkSql = "SELECT Status FROM rooms WHERE RoomId = ?";
+            PreparedStatement checkStmt = conn.prepareStatement(checkSql);
+            checkStmt.setInt(1, roomId);
+            ResultSet rs = checkStmt.executeQuery();
 
-            stmt.executeUpdate();
+            if (rs.next()) {
+                String roomStatus = rs.getString("Status");
+                if (!roomStatus.equalsIgnoreCase("Available")) {
+                    JOptionPane.showMessageDialog(this, "Phòng đã được đặt hoặc không khả dụng.");
+                    return;
+                }
+            }
+
+            // 2. Thêm đặt phòng
+            String insertSql = "INSERT INTO bookings (RoomId, CustomerId, CheckInDate, CheckOutDate, Status, PaymentStatus) " +
+                               "VALUES (?, ?, ?, ?, 'Confirmed', 'Pending')";
+            PreparedStatement insertStmt = conn.prepareStatement(insertSql);
+            insertStmt.setInt(1, roomId);
+            insertStmt.setInt(2, customerId);
+            insertStmt.setDate(3, checkIn);
+            insertStmt.setDate(4, checkOut);
+            insertStmt.executeUpdate();
+
+            // 3. Cập nhật trạng thái phòng
+            String updateRoomSql = "UPDATE rooms SET Status = 'Booked' WHERE RoomId = ?";
+            PreparedStatement updateRoomStmt = conn.prepareStatement(updateRoomSql);
+            updateRoomStmt.setInt(1, roomId);
+            updateRoomStmt.executeUpdate();
+
             JOptionPane.showMessageDialog(this, "Đặt phòng thành công!");
             this.dispose();
-            
         }
 
     } catch (Exception ex) {
@@ -283,14 +292,7 @@ private void add(){
     }// </editor-fold>//GEN-END:initComponents
 
     private void closeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_closeMouseClicked
-        int confirm = JOptionPane.showConfirmDialog(this, 
-                "Bạn có chắc chắn muốn thoát ứng dụng?", 
-                "Xác nhận Thoát", 
-                JOptionPane.YES_NO_OPTION);
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            System.exit(0); 
-        }
+this.dispose();
     }//GEN-LAST:event_closeMouseClicked
 
     private void jPanel2MousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel2MousePressed

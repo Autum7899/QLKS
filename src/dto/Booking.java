@@ -22,7 +22,6 @@ public class Booking {
     private Date actualCheckOutDate;
     private Date bookingDate;
     private String status;
-    private BigDecimal totalAmount;
     private String paymentStatus;
     private String notes;
 
@@ -102,15 +101,6 @@ public class Booking {
     public void setStatus(String status) {
         this.status = status;
     }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
     public String getPaymentStatus() {
         return paymentStatus;
     }
