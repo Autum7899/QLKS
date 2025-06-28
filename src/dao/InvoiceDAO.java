@@ -3,14 +3,20 @@ package dao;
 
 
 import dto.Invoice;
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import qlks.DatabaseConnection;
 import java.sql.*;
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * DAO cho thực thể Hóa đơn (Invoice).
@@ -26,20 +32,22 @@ public class InvoiceDAO {
      * @return ID của hóa đơn vừa tạo, hoặc -1 nếu thất bại.
      * @throws SQLException
      */
-    public void showEstimateInvoice(int bookingId, JTable tblEstimateDetails, JLabel lblEstimateTotal) {
+    public static void showEstimateInvoice(int bookingId, JTable tblEstimateDetails, JLabel lblEstimateTotal) {
     DefaultTableModel model = new DefaultTableModel();
-    model.setColumnIdentifiers(new Object[]{"Tên", "Số lượng", "Đơn giá", "Thành tiền"});
+    model.setColumnIdentifiers(new Object[]{"Dịch vụ", "Số lượng", "Đơn giá", "Thành tiền"});
     double total = 0;
 
     try (Connection conn = DatabaseConnection.getConnection()) {
 
         // ===== TIỀN PHÒNG =====
-        String sqlRoom = """
-            SELECT r.RoomNumber, r.PricePerNight, b.CheckInDate, b.CheckOutDate
-            FROM bookings b
-            JOIN rooms r ON b.RoomId = r.RoomId
-            WHERE b.BookingId = ?
-        """;
+       String sqlRoom = """
+    SELECT r.RoomNumber, r.PricePerNight,
+           b.CheckInDate, b.CheckOutDate,
+           b.ActualCheckInDate, b.ActualCheckOutDate
+    FROM bookings b
+    JOIN rooms r ON b.RoomId = r.RoomId
+    WHERE b.BookingId = ?
+""";
 
         PreparedStatement stmtRoom = conn.prepareStatement(sqlRoom);
         stmtRoom.setInt(1, bookingId);
@@ -48,8 +56,12 @@ public class InvoiceDAO {
         if (rsRoom.next()) {
             String roomName = "Phòng " + rsRoom.getString("RoomNumber");
             double unitPrice = rsRoom.getDouble("PricePerNight");
-            Date checkIn = rsRoom.getDate("CheckInDate");
-            Date checkOut = rsRoom.getDate("CheckOutDate");
+            Date checkIn = rsRoom.getDate("ActualCheckInDate");
+Date checkOut = rsRoom.getDate("ActualCheckOutDate");
+
+if (checkIn == null) checkIn = rsRoom.getDate("CheckInDate");
+if (checkOut == null) checkOut = rsRoom.getDate("CheckOutDate");
+;
 
             long nights = ChronoUnit.DAYS.between(
                 checkIn.toLocalDate(), checkOut.toLocalDate()
@@ -69,7 +81,7 @@ public class InvoiceDAO {
         // ===== DỊCH VỤ =====
         String sqlService = """
             SELECT s.ServiceName, bs.Quantity, bs.PriceAtBooking
-            FROM booked_services bs
+            FROM bookedservices bs
             JOIN services s ON bs.ServiceId = s.ServiceId
             WHERE bs.BookingId = ?
         """;
@@ -95,138 +107,182 @@ public class InvoiceDAO {
 
         // Gán dữ liệu cho bảng và label tổng
         tblEstimateDetails.setModel(model);
-        lblEstimateTotal.setText("Tạm tính: " + String.format("%,.0f", total) + " VNĐ");
+        lblEstimateTotal.setText("Total: " + String.format("%,.0f", total) + " VNĐ");
 
     } catch (Exception e) {
         e.printStackTrace();
         JOptionPane.showMessageDialog(null, "Lỗi khi tính hóa đơn tạm: " + e.getMessage());
     }
 }
+public static boolean thanhToan(int bookingId, String username, String paymentMethod) {
+    String sqlGetUserId = "SELECT UserId FROM users WHERE Username = ?";
+    String sqlCheck = "SELECT b.BookingId, b.CustomerId, b.CheckInDate, b.CheckOutDate, " +
+                      "r.PricePerNight, IFNULL(b.ActualCheckInDate, b.CheckInDate) AS StartDate, " +
+                      "IFNULL(b.ActualCheckOutDate, b.CheckOutDate) AS EndDate " +
+                      "FROM bookings b JOIN rooms r ON b.RoomId = r.RoomId " +
+                      "WHERE b.BookingId = ?";
+    String sqlService = "SELECT SUM(Quantity * PriceAtBooking) FROM bookedservices WHERE BookingId = ?";
+    String sqlInsertInvoice = "INSERT INTO invoices (BookingId, CustomerId, TotalRoomCharge, TotalServiceCharge, GrandTotal, PaymentMethod, PaymentDate, IssuedByUserId) " +
+                              "VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)";
+    String sqlUpdateStatus = "UPDATE bookings SET PaymentStatus = 'Paid' WHERE BookingId = ?";
 
-    public int createInvoiceFromBooking(int bookingId, int userId) throws SQLException {
-        String roomChargeSql = "SELECT DATEDIFF(b.CheckOutDate, b.CheckInDate) * r.PricePerNight AS RoomCharge " +
-                               "FROM bookings b JOIN rooms r ON b.RoomId = r.RoomId WHERE b.BookingId = ?";
-        String serviceChargeSql = "SELECT SUM(bs.Quantity * bs.PriceAtBooking) AS ServiceCharge " +
-                                  "FROM bookedservices bs WHERE bs.BookingId = ?";
-        String insertInvoiceSql = "INSERT INTO invoices(BookingId, CustomerId, IssueDate, TotalRoomCharge, TotalServiceCharge, GrandTotal, IssuedByUserId) " +
-                                  "SELECT ?, CustomerId, NOW(), ?, ?, ?, ? FROM bookings WHERE BookingId = ?";
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        conn.setAutoCommit(false);
 
-        Connection conn = null;
-        int invoiceId = -1;
-        
-        try {
-            conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false); // Bắt đầu transaction
-
-            BigDecimal totalRoomCharge = BigDecimal.ZERO;
-            BigDecimal totalServiceCharge = BigDecimal.ZERO;
-
-            // 1. Tính tiền phòng 
-            try (PreparedStatement psRoom = conn.prepareStatement(roomChargeSql)) {
-                psRoom.setInt(1, bookingId);
-                try (ResultSet rs = psRoom.executeQuery()) {
-                    if (rs.next()) {
-                        totalRoomCharge = rs.getBigDecimal("RoomCharge");
-                    }
-                }
-            }
-
-            // 2. Tính tiền dịch vụ 
-            try (PreparedStatement psService = conn.prepareStatement(serviceChargeSql)) {
-                psService.setInt(1, bookingId);
-                try (ResultSet rs = psService.executeQuery()) {
-                    if (rs.next()) {
-                        BigDecimal charge = rs.getBigDecimal("ServiceCharge");
-                        if (charge != null) {
-                            totalServiceCharge = charge;
-                        }
-                    }
-                }
-            }
-
-            // 3. Tính tổng cộng (chưa bao gồm thuế, giảm giá) 
-            BigDecimal grandTotal = totalRoomCharge.add(totalServiceCharge);
-
-            // 4. Tạo bản ghi hóa đơn chính
-            try (PreparedStatement psInvoice = conn.prepareStatement(insertInvoiceSql, Statement.RETURN_GENERATED_KEYS)) {
-                psInvoice.setInt(1, bookingId);
-                psInvoice.setBigDecimal(2, totalRoomCharge);
-                psInvoice.setBigDecimal(3, totalServiceCharge);
-                psInvoice.setBigDecimal(4, grandTotal);
-                psInvoice.setInt(5, userId);
-                psInvoice.setInt(6, bookingId);
-                
-                int affectedRows = psInvoice.executeUpdate();
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = psInvoice.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            invoiceId = generatedKeys.getInt(1);
-                        }
-                    }
+        int userId = -1;
+        try (PreparedStatement psUser = conn.prepareStatement(sqlGetUserId)) {
+            psUser.setString(1, username);
+            try (ResultSet rsUser = psUser.executeQuery()) {
+                if (rsUser.next()) {    
+                    userId = rsUser.getInt("UserId");
                 } else {
-                    throw new SQLException("Tạo hóa đơn thất bại, không có hàng nào được thêm.");
+                    throw new Exception("Không tìm thấy người dùng với username: " + username);
                 }
             }
-            
-            // (Tùy chọn) Thêm các bản ghi vào InvoiceDetails tại đây nếu cần
+        }
 
-            conn.commit(); // Hoàn thành transaction
-        } catch (SQLException e) {
-            if (conn != null) {
-                conn.rollback(); // Hoàn tác nếu có lỗi
-            }
-            throw e; // Ném lỗi ra ngoài
-        } finally {
-            if (conn != null) {
-                conn.setAutoCommit(true); // Trả lại trạng thái mặc định
-                conn.close();
+        try (PreparedStatement ps = conn.prepareStatement(sqlCheck)) {
+            ps.setInt(1, bookingId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int customerId = rs.getInt("CustomerId");
+                    BigDecimal pricePerNight = rs.getBigDecimal("PricePerNight");
+                    LocalDate startDate = rs.getTimestamp("StartDate").toLocalDateTime().toLocalDate();
+                    LocalDate endDate = rs.getTimestamp("EndDate").toLocalDateTime().toLocalDate();
+                    long days = ChronoUnit.DAYS.between(startDate, endDate);
+                    if (days == 0) days = 1;
+
+                    BigDecimal roomCharge = pricePerNight.multiply(BigDecimal.valueOf(days));
+
+                    BigDecimal serviceCharge = BigDecimal.ZERO;
+                    try (PreparedStatement psService = conn.prepareStatement(sqlService)) {
+                        psService.setInt(1, bookingId);
+                        try (ResultSet rsService = psService.executeQuery()) {
+                            if (rsService.next()) {
+                                serviceCharge = rsService.getBigDecimal(1);
+                                if (serviceCharge == null) serviceCharge = BigDecimal.ZERO;
+                            }
+                        }
+                    }
+
+                    BigDecimal grandTotal = roomCharge.add(serviceCharge);
+
+                    try (PreparedStatement psInvoice = conn.prepareStatement(sqlInsertInvoice)) {
+                        psInvoice.setInt(1, bookingId);
+                        psInvoice.setInt(2, customerId);
+                        psInvoice.setBigDecimal(3, roomCharge);
+                        psInvoice.setBigDecimal(4, serviceCharge);
+                        psInvoice.setBigDecimal(5, grandTotal);
+                        psInvoice.setString(6, paymentMethod);
+                        psInvoice.setInt(7, userId);
+                        psInvoice.executeUpdate();
+                    }
+
+                    try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateStatus)) {
+                        psUpdate.setInt(1, bookingId);
+                        psUpdate.executeUpdate();
+                    }
+
+                    conn.commit();
+                    return true;
+                }
             }
         }
-        
-        return invoiceId;
+    } catch (Exception e) {
+        e.printStackTrace();
     }
+    return false;
+}
 
-    /**
-     * Cập nhật trạng thái thanh toán cho hóa đơn. 
-     * @param invoiceId ID của hóa đơn.
-     * @param paymentMethod Phương thức thanh toán (Tiền mặt, Thẻ...).
-     * @return true nếu thành công.
-     * @throws SQLException
-     */
-    public boolean processPayment(int invoiceId, String paymentMethod) throws SQLException {
-        String sql = "UPDATE invoices SET PaymentMethod = ?, PaymentDate = NOW() WHERE InvoiceId = ?";
-        String updateBookingSql = "UPDATE bookings SET PaymentStatus = 'Đã thanh toán' WHERE BookingId = (SELECT BookingId FROM invoices WHERE InvoiceId = ?)";
+public static void printInvoiceToTextFile(int bookingId, String username) {
+    String filePath = "C:\\Users\\Admin\\Desktop\\HoaDon\\Invoice_" + bookingId + ".txt";
 
-        try (Connection conn = DatabaseConnection.getConnection()) {
-             conn.setAutoCommit(false); // Bắt đầu transaction
-             
-             boolean invoiceUpdated = false;
-             boolean bookingUpdated = false;
+    try (Connection conn = DatabaseConnection.getConnection();
+         PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
 
-             // Cập nhật hóa đơn
-             try(PreparedStatement psInvoice = conn.prepareStatement(sql)) {
-                 psInvoice.setString(1, paymentMethod);
-                 psInvoice.setInt(2, invoiceId);
-                 invoiceUpdated = psInvoice.executeUpdate() > 0;
-             }
-             
-             // Cập nhật trạng thái booking
-             try(PreparedStatement psBooking = conn.prepareStatement(updateBookingSql)) {
-                 psBooking.setInt(1, invoiceId);
-                 bookingUpdated = psBooking.executeUpdate() > 0;
-             }
+        writer.println("===== HÓA ĐƠN THANH TOÁN =====");
+        writer.println("Mã đặt phòng: " + bookingId);
+        writer.println("------------------------------------------");
 
-             if(invoiceUpdated && bookingUpdated) {
-                 conn.commit();
-                 return true;
-             } else {
-                 conn.rollback();
-                 return false;
-             }
+        double total = 0;
 
-        } catch (SQLException e) {
-            // Lỗi sẽ tự rollback nếu có
-            throw e;
+        // ===== TIỀN PHÒNG =====
+        String sqlRoom = """
+            SELECT r.RoomNumber, r.PricePerNight,
+                   b.CheckInDate, b.CheckOutDate,
+                   b.ActualCheckInDate, b.ActualCheckOutDate
+            FROM bookings b
+            JOIN rooms r ON b.RoomId = r.RoomId
+            WHERE b.BookingId = ?
+        """;
+
+        try (PreparedStatement stmtRoom = conn.prepareStatement(sqlRoom)) {
+            stmtRoom.setInt(1, bookingId);
+            ResultSet rsRoom = stmtRoom.executeQuery();
+
+            if (rsRoom.next()) {
+                String roomNumber = rsRoom.getString("RoomNumber");
+                double unitPrice = rsRoom.getDouble("PricePerNight");
+
+                Date checkIn = rsRoom.getDate("ActualCheckInDate");
+                Date checkOut = rsRoom.getDate("ActualCheckOutDate");
+
+                if (checkIn == null) checkIn = rsRoom.getDate("CheckInDate");
+                if (checkOut == null) checkOut = rsRoom.getDate("CheckOutDate");
+
+                long nights = ChronoUnit.DAYS.between(
+                    checkIn.toLocalDate(), checkOut.toLocalDate()
+                );
+
+                double roomTotal = nights * unitPrice;
+                total += roomTotal;
+
+                writer.println("Phòng: " + roomNumber);
+                writer.println("Số đêm: " + nights);
+                writer.println("Đơn giá: " + String.format("%,.0f", unitPrice) + " VNĐ");
+                writer.println("Thành tiền: " + String.format("%,.0f", roomTotal) + " VNĐ");
+                writer.println();
+            }
         }
+
+        // ===== DỊCH VỤ =====
+        writer.println("---- DỊCH VỤ SỬ DỤNG ----");
+
+        String sqlService = """
+            SELECT s.ServiceName, bs.Quantity, bs.PriceAtBooking
+            FROM bookedservices bs
+            JOIN services s ON bs.ServiceId = s.ServiceId
+            WHERE bs.BookingId = ?
+        """;
+
+        try (PreparedStatement stmtService = conn.prepareStatement(sqlService)) {
+            stmtService.setInt(1, bookingId);
+            ResultSet rsService = stmtService.executeQuery();
+
+            while (rsService.next()) {
+                String serviceName = rsService.getString("ServiceName");
+                int quantity = rsService.getInt("Quantity");
+                double price = rsService.getDouble("PriceAtBooking");
+                double lineTotal = quantity * price;
+                total += lineTotal;
+
+                writer.printf("• %s: %d x %,.0f = %,.0f VNĐ\n", serviceName, quantity, price, lineTotal);
+            }
+        }
+
+        writer.println("------------------------------------------");
+        writer.println("TỔNG CỘNG: " + String.format("%,.0f", total) + " VNĐ");
+        writer.println("Ngày in: " + java.time.LocalDateTime.now());
+        writer.println("In bởi nhân viên: " +username);
+        writer.println("==========================================");
+
+        writer.close();
+        JOptionPane.showMessageDialog(null, "Đã in hóa đơn ra file: " + filePath);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi in hóa đơn: " + e.getMessage());
     }
+}
+
 }

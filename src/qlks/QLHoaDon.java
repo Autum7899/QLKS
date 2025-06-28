@@ -7,6 +7,8 @@ package qlks;
 //import static btl_thlt_java.MuonTra.setupTableAppearance;
 import com.mysql.cj.result.Row;
 import dao.BookingDAO;
+import dao.InvoiceDAO;
+import static dao.ServiceDAO.deleteSelectedBookedService;
 import dto.Booking;
 import java.awt.Color;
 import java.io.BufferedWriter;
@@ -22,9 +24,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import qlks.ThemedTable;
 
@@ -34,6 +40,8 @@ import qlks.ThemedTable;
  */
 public class QLHoaDon extends RoundedFrame {
     private int mouseX, mouseY;
+    private final Map<String, Integer> bookingMap = new HashMap<>();
+    private final Map<String, Integer> serviceMap = new HashMap<>();
 
     /**
      * Creates new form HomePage
@@ -42,10 +50,153 @@ public class QLHoaDon extends RoundedFrame {
     public QLHoaDon() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
+        loadBookingToComboBox(cmbBooking);
+        loadServicesToComboBox(cmbService);
 
+    cmbBooking.addActionListener(e -> {
+        Integer bookingId = getSelectedBookingIdFromComboBox(cmbBooking);
+        if (bookingId != null) {
+            UserInfo.selected = bookingId;
+            InvoiceDAO.showEstimateInvoice(bookingId, tInvoice, lTotal);
+        }
+    });
+
+    // Auto hiển thị hóa đơn đầu tiên nếu có
+    if (cmbBooking.getItemCount() > 0) {
+        cmbBooking.setSelectedIndex(0);
+    }
+//        InvoiceDAO.showEstimateInvoice(,tInvoice,lTotal);
 //        if ("User".equals(UserInfo.loggedInRole)) {
 //    manageUsers.setVisible(false);
     }
+    public void themDichVuChoBooking() {
+    // 1. Lấy booking ID
+    String selectedBooking = (String) cmbBooking.getSelectedItem();
+    Integer bookingId = bookingMap.get(selectedBooking);
+
+    if (bookingId == null) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng hợp lệ.");
+        return;
+    }
+
+    // 2. Lấy service ID
+    String selectedService = (String) cmbService.getSelectedItem();
+    Integer serviceId = serviceMap.get(selectedService);
+
+    if (serviceId == null) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một dịch vụ hợp lệ.");
+        return;
+    }
+
+    // 3. Số lượng
+    int quantity;
+    try {
+        quantity = Integer.parseInt(spnSoLuong.getValue().toString());
+        if (quantity <= 0) throw new NumberFormatException();
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(null, "Số lượng phải là số nguyên dương.");
+        return;
+    }
+
+    // 4. Lấy giá tại thời điểm thêm
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String priceSql = "SELECT Price FROM services WHERE ServiceId = ?";
+        PreparedStatement psPrice = conn.prepareStatement(priceSql);
+        psPrice.setInt(1, serviceId);
+        ResultSet rs = psPrice.executeQuery();
+
+        if (rs.next()) {
+            double priceAtBooking = rs.getDouble("Price");
+
+            // 5. Thêm vào booked_services
+            String insertSql = """
+                INSERT INTO bookedservices (BookingId, ServiceId, Quantity, PriceAtBooking)
+                VALUES (?, ?, ?, ?)
+            """;
+            PreparedStatement psInsert = conn.prepareStatement(insertSql);
+            psInsert.setInt(1, bookingId);
+            psInsert.setInt(2, serviceId);
+            psInsert.setInt(3, quantity);
+            psInsert.setDouble(4, priceAtBooking);
+            psInsert.executeUpdate();
+
+            JOptionPane.showMessageDialog(null, "Đã thêm dịch vụ thành công!");
+
+            // Cập nhật hóa đơn tạm tính sau khi thêm
+            InvoiceDAO.showEstimateInvoice(bookingId, tInvoice, lTotal);
+
+        } else {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy giá dịch vụ.");
+        }
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi thêm dịch vụ: " + ex.getMessage());
+    }
+}
+    public void loadServicesToComboBox(JComboBox<String> comboBox) {
+    comboBox.removeAllItems();
+    serviceMap.clear();
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "SELECT ServiceId, ServiceName FROM services";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            int id = rs.getInt("ServiceId");
+            String name = rs.getString("ServiceName");
+            comboBox.addItem(name);
+            serviceMap.put(name, id);
+        }
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi load dịch vụ: " + e.getMessage());
+    }
+}
+
+    public void loadBookingToComboBox(JComboBox<String> comboBox) {
+        comboBox.removeAllItems();
+    bookingMap.clear();
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = """
+            SELECT b.BookingId, c.FullName, r.RoomNumber, b.Status
+            FROM bookings b
+            JOIN customers c ON b.CustomerId = c.CustomerId
+            JOIN rooms r ON b.RoomId = r.RoomId
+            WHERE b.BookingId NOT IN (SELECT BookingId FROM invoices) AND b.Status <> 'Cancelled' AND b.Status <> 'Confirmed'
+        """;
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            int bookingId = rs.getInt("BookingId");
+            String customer = rs.getString("FullName");
+            String room = rs.getString("RoomNumber");
+            String status = rs.getString("Status");
+
+            String display = "BKG-" + bookingId + " | Phòng " + room + " | " + customer + " | " + status;
+            comboBox.addItem(display);
+            bookingMap.put(display, bookingId);
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi tải danh sách Booking: " + e.getMessage());
+    }
+}
+public Integer getSelectedBookingIdFromComboBox(JComboBox<String> comboBox) {
+    String selected = (String) comboBox.getSelectedItem();
+    if (selected == null || !bookingMap.containsKey(selected)) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng hợp lệ.");
+        return null;
+    }
+
+    return bookingMap.get(selected);
+}
+
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -63,8 +214,17 @@ public class QLHoaDon extends RoundedFrame {
         jPanel3 = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
-        tBooking = new ThemedTable();
-        jComboBox1 = new javax.swing.JComboBox<>();
+        tInvoice = new ThemedTable();
+        lTotal = new javax.swing.JLabel();
+        btnDelete = new javax.swing.JLabel();
+        btnAdd = new RoundedButton();
+        btnAdd1 = new RoundedButton();
+        cmbService = new javax.swing.JComboBox<>();
+        spnSoLuong = new javax.swing.JSpinner();
+        cmbBooking = new javax.swing.JComboBox<>();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel9 = new javax.swing.JLabel();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -136,6 +296,7 @@ public class QLHoaDon extends RoundedFrame {
         getContentPane().add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 1200, 60));
 
         jPanel1.setBackground(new java.awt.Color(252, 244, 234));
+        jPanel1.setDoubleBuffered(false);
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel3.setBackground(new java.awt.Color(255, 255, 255));
@@ -146,8 +307,13 @@ public class QLHoaDon extends RoundedFrame {
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
         jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Hóa đơn tạm tính", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 18), new java.awt.Color(0, 77, 79))); // NOI18N
         jPanel4.setOpaque(false);
+        jPanel4.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jPanel4MouseClicked(evt);
+            }
+        });
 
-        tBooking.setModel(new javax.swing.table.DefaultTableModel(
+        tInvoice.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
                 {null, null, null, null},
@@ -155,31 +321,102 @@ public class QLHoaDon extends RoundedFrame {
                 {null, null, null, null}
             },
             new String [] {
-                "Tên dịch vụ", "	Số lượng", "Đơn giá	", "Thành tiền "
+                "Dịch vụ", "	Số lượng", "Đơn giá	", "Thành tiền "
             }
         ));
-        jScrollPane2.setViewportView(tBooking);
+        jScrollPane2.setViewportView(tInvoice);
+
+        lTotal.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lTotal.setForeground(new java.awt.Color(0, 77, 79));
+        lTotal.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lTotal.setText("Total");
+
+        btnDelete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/trash-can.png"))); // NOI18N
+        btnDelete.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnDelete.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                btnDeleteMouseClicked(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 570, Short.MAX_VALUE)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(btnDelete)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(lTotal, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lTotal)
+                    .addComponent(btnDelete))
+                .addContainerGap())
         );
 
         jPanel3.add(jPanel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 22, -1, 570));
 
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+        btnAdd.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnAdd.setForeground(new java.awt.Color(255, 255, 255));
+        btnAdd.setText("Thêm dịch vụ");
+        btnAdd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAdd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox1ActionPerformed(evt);
+                btnAddActionPerformed(evt);
             }
         });
-        jPanel3.add(jComboBox1, new org.netbeans.lib.awtextra.AbsoluteConstraints(80, 60, 400, 40));
+        jPanel3.add(btnAdd, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 340, 400, 80));
+
+        btnAdd1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnAdd1.setForeground(new java.awt.Color(255, 255, 255));
+        btnAdd1.setText("Thanh toán");
+        btnAdd1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAdd1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAdd1ActionPerformed(evt);
+            }
+        });
+        jPanel3.add(btnAdd1, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 470, 400, 80));
+
+        cmbService.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        cmbService.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cmbService.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbServiceActionPerformed(evt);
+            }
+        });
+        jPanel3.add(cmbService, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 180, 400, 40));
+
+        spnSoLuong.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        jPanel3.add(spnSoLuong, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 260, 90, 40));
+
+        cmbBooking.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        cmbBooking.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cmbBooking.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbBookingActionPerformed(evt);
+            }
+        });
+        jPanel3.add(cmbBooking, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 100, 400, 40));
+
+        jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabel7.setText("Số lượng");
+        jPanel3.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 230, 150, 30));
+
+        jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabel8.setText("Chọn phòng");
+        jPanel3.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 70, 150, 30));
+
+        jLabel9.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jLabel9.setText("Chọn dịch vụ");
+        jPanel3.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 150, 150, 30));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 1150, 610));
 
@@ -188,7 +425,7 @@ public class QLHoaDon extends RoundedFrame {
         setSize(new java.awt.Dimension(1200, 700));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void closeMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_closeMouseClicked
         int confirm = JOptionPane.showConfirmDialog(this, 
                 "Bạn có chắc chắn muốn thoát ứng dụng?", 
@@ -217,9 +454,33 @@ public class QLHoaDon extends RoundedFrame {
         this.dispose();
     }//GEN-LAST:event_ReturnMouseClicked
 
-    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+    private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBox1ActionPerformed
+themDichVuChoBooking();
+    }//GEN-LAST:event_btnAddActionPerformed
+
+    private void btnAdd1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAdd1ActionPerformed
+        // TODO add your handling code here:
+        PaymentForm pm = new PaymentForm();
+        pm.setVisible(true);
+    }//GEN-LAST:event_btnAdd1ActionPerformed
+
+    private void cmbServiceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbServiceActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbServiceActionPerformed
+
+    private void cmbBookingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbBookingActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbBookingActionPerformed
+
+    private void btnDeleteMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnDeleteMouseClicked
+        // TODO add your handling code here:
+        deleteSelectedBookedService(tInvoice, UserInfo.selected,lTotal);
+    }//GEN-LAST:event_btnDeleteMouseClicked
+
+    private void jPanel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel4MouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jPanel4MouseClicked
 
     /**
      * @param args the command line arguments
@@ -273,13 +534,20 @@ public class QLHoaDon extends RoundedFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel Return;
+    private javax.swing.JButton btnAdd;
+    private javax.swing.JButton btnAdd1;
+    private javax.swing.JLabel btnDelete;
     private javax.swing.JLabel close;
-    private javax.swing.JComboBox<String> jComboBox1;
+    private javax.swing.JComboBox<String> cmbBooking;
+    private javax.swing.JComboBox<String> cmbService;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JOptionPane jOptionPane1;
     private javax.swing.JPanel jPanel1;
@@ -287,6 +555,8 @@ public class QLHoaDon extends RoundedFrame {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTable tBooking;
+    private javax.swing.JLabel lTotal;
+    private javax.swing.JSpinner spnSoLuong;
+    private javax.swing.JTable tInvoice;
     // End of variables declaration//GEN-END:variables
 }

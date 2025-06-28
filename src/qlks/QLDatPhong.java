@@ -186,6 +186,7 @@ public class QLDatPhong extends RoundedFrame {
         btnCancel.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnCancel.setForeground(new java.awt.Color(255, 255, 255));
         btnCancel.setText("Hủy ");
+        btnCancel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnCancel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnCancelActionPerformed(evt);
@@ -195,6 +196,7 @@ public class QLDatPhong extends RoundedFrame {
         btnAdd.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnAdd.setForeground(new java.awt.Color(255, 255, 255));
         btnAdd.setText("Tạo Đặt phòng mới");
+        btnAdd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAdd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAddActionPerformed(evt);
@@ -204,6 +206,7 @@ public class QLDatPhong extends RoundedFrame {
         btnUpdate.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnUpdate.setForeground(new java.awt.Color(255, 255, 255));
         btnUpdate.setText("Sửa");
+        btnUpdate.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnUpdate.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnUpdateActionPerformed(evt);
@@ -213,6 +216,7 @@ public class QLDatPhong extends RoundedFrame {
         btnCO.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnCO.setForeground(new java.awt.Color(255, 255, 255));
         btnCO.setText("Trả phòng");
+        btnCO.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnCO.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnCOActionPerformed(evt);
@@ -222,6 +226,7 @@ public class QLDatPhong extends RoundedFrame {
         btnCI.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnCI.setForeground(new java.awt.Color(255, 255, 255));
         btnCI.setText("Nhận phòng");
+        btnCI.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnCI.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnCIActionPerformed(evt);
@@ -346,6 +351,7 @@ public class QLDatPhong extends RoundedFrame {
         // TODO add your handling code here:
         BookingDAO.cancelBooking(tBooking);
         tBooking.getColumnModel().getColumn(5).setCellRenderer(new StatusCellRenderer());
+        
     }//GEN-LAST:event_btnCancelActionPerformed
 
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed

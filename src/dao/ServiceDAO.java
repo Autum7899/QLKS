@@ -1,17 +1,64 @@
 package dao;
 
+import static dao.InvoiceDAO.showEstimateInvoice;
 import dto.Service;
 import qlks.DatabaseConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.math.BigDecimal;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
 
 /**
  * DAO cho thực thể Dịch vụ (Service).
  * Quản lý danh sách dịch vụ và ghi nhận việc sử dụng dịch vụ.
  */
 public class ServiceDAO {
+   public static void deleteSelectedBookedService(JTable table, int bookingId,JLabel jLabel) {
+    int row = table.getSelectedRow();
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một dòng dịch vụ để xóa.");
+        return;
+    }
+
+    String serviceName = table.getValueAt(row, 0).toString();
+    if (serviceName.toLowerCase().startsWith("phòng")) {
+        JOptionPane.showMessageDialog(null, "Không thể xóa tiền phòng.");
+        return;
+    }
+
+    // Hỏi xác nhận
+    int confirm = JOptionPane.showConfirmDialog(null, "Xác nhận xóa dịch vụ: " + serviceName + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+    if (confirm != JOptionPane.YES_OPTION) return;
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = """
+            DELETE FROM bookedservices 
+            WHERE BookingId = ? AND ServiceId = (
+                SELECT ServiceId FROM services WHERE ServiceName = ?
+            )
+        """;
+
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        stmt.setInt(1, bookingId);
+        stmt.setString(2, serviceName);
+        int rows = stmt.executeUpdate();
+
+        if (rows > 0) {
+            JOptionPane.showMessageDialog(null, "Đã xóa dịch vụ: " + serviceName);
+            // Load lại bảng
+            showEstimateInvoice(bookingId, table, jLabel); // chỉ cần truyền bảng nếu không cần tổng
+        } else {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy dịch vụ để xóa.");
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi xóa dịch vụ: " + e.getMessage());
+    }
+}
 
     /**
      * Thêm một dịch vụ mới. 

@@ -13,10 +13,19 @@ public class BookingDAO {
         String[] columnNames = {"Mã Booking", "Khách hàng", "Phòng", "Ngày nhận", "Ngày trả", "Trạng thái"};
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
 
-        String sql = "SELECT b.BookingId, c.FullName, r.RoomNumber, b.CheckInDate, b.CheckOutDate, b.Status " +
-                     "FROM bookings b " +
-                     "JOIN customers c ON b.CustomerId = c.CustomerId " +
-                     "JOIN rooms r ON b.RoomId = r.RoomId";
+          String sql = """
+        SELECT b.BookingId, c.FullName, r.RoomNumber, 
+               b.CheckInDate, b.CheckOutDate, b.Status
+        FROM bookings b
+        JOIN customers c ON b.CustomerId = c.CustomerId
+        JOIN rooms r ON b.RoomId = r.RoomId
+        ORDER BY 
+          CASE 
+            WHEN b.Status IN ('CheckedOut', 'Cancelled') THEN 1
+            ELSE 0
+          END,
+          b.CheckInDate
+    """;
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -83,7 +92,7 @@ public class BookingDAO {
 
     // Trả phòng
     public static void checkOut(JTable table) {
-        int row = table.getSelectedRow();
+    int row = table.getSelectedRow();
     if (row < 0) {
         JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
         return;
@@ -105,51 +114,115 @@ public class BookingDAO {
 
     int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
 
-    String sql = "UPDATE bookings SET ActualCheckOutDate = NOW(), Status = 'CheckedOut' WHERE BookingId = ?";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        conn.setAutoCommit(false); // Start transaction
 
-        stmt.setInt(1, bookingId);
-        stmt.executeUpdate();
+        // 1. Get RoomId of this booking
+        int roomId = -1;
+        String getRoomIdSQL = "SELECT RoomId FROM bookings WHERE BookingId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(getRoomIdSQL)) {
+            stmt.setInt(1, bookingId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                roomId = rs.getInt("RoomId");
+            } else {
+                JOptionPane.showMessageDialog(null, "Không tìm thấy phòng cho booking này.");
+                conn.rollback();
+                return;
+            }
+        }
 
+        // 2. Update booking status to 'CheckedOut' and set ActualCheckOutDate
+        String updateBookingSQL = "UPDATE bookings SET ActualCheckOutDate = NOW(), Status = 'CheckedOut' WHERE BookingId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(updateBookingSQL)) {
+            stmt.setInt(1, bookingId);
+            stmt.executeUpdate();
+        }
+
+        // 3. Update room status to 'Available'
+        String updateRoomSQL = "UPDATE rooms SET Status = 'Available' WHERE RoomId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(updateRoomSQL)) {
+            stmt.setInt(1, roomId);
+            stmt.executeUpdate();
+        }
+
+        conn.commit(); // Complete transaction
         JOptionPane.showMessageDialog(null, "Trả phòng thành công!");
         loadBookingsToTable(table);
 
     } catch (SQLException e) {
+        e.printStackTrace();
         JOptionPane.showMessageDialog(null, "Lỗi khi trả phòng: " + e.getMessage());
     }
-    }
-
+}
     // Hủy đặt
     public static void cancelBooking(JTable table) {
-        int row = table.getSelectedRow();
+    int row = table.getSelectedRow();
     if (row < 0) {
         JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
         return;
     }
 
-    String status = table.getValueAt(row, 5).toString();
-    if (status.equalsIgnoreCase("Cancelled") || status.equalsIgnoreCase("CheckedOut")) {
-        JOptionPane.showMessageDialog(null, "Không thể hủy đặt phòng đã hủy hoặc đã trả phòng.");
+    String status = table.getValueAt(row, 5).toString(); // Status column
+    if (status.equalsIgnoreCase("Cancelled") ||
+        status.equalsIgnoreCase("CheckedOut") ||
+        status.equalsIgnoreCase("CheckedIn")) {
+        JOptionPane.showMessageDialog(null, "Chỉ có thể hủy đặt phòng chưa sử dụng.");
         return;
     }
 
     int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
 
-    String sql = "UPDATE bookings SET Status = 'Cancelled' WHERE BookingId = ?";
-    try (Connection conn = DatabaseConnection.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+    int confirm = JOptionPane.showConfirmDialog(
+        null,
+        "Bạn có chắc chắn muốn hủy đặt phòng này?",
+        "Xác nhận hủy",
+        JOptionPane.YES_NO_OPTION
+    );
+    if (confirm != JOptionPane.YES_OPTION) return;
 
-        stmt.setInt(1, bookingId);
-        stmt.executeUpdate();
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        conn.setAutoCommit(false); // bắt đầu giao dịch
 
+        // 1. Lấy RoomId của booking này
+        int roomId = -1;
+        String getRoomIdSQL = "SELECT RoomId FROM bookings WHERE BookingId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(getRoomIdSQL)) {
+            stmt.setInt(1, bookingId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                roomId = rs.getInt("RoomId");
+            } else {
+                JOptionPane.showMessageDialog(null, "Không tìm thấy phòng cho booking này.");
+                conn.rollback();
+                return;
+            }
+        }
+
+        // 2. Hủy booking
+        String cancelSQL = "UPDATE bookings SET Status = 'Cancelled' WHERE BookingId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(cancelSQL)) {
+            stmt.setInt(1, bookingId);
+            stmt.executeUpdate();
+        }
+
+        // 3. Cập nhật trạng thái phòng → Available
+        String updateRoomSQL = "UPDATE rooms SET Status = 'Available' WHERE RoomId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(updateRoomSQL)) {
+            stmt.setInt(1, roomId);
+            stmt.executeUpdate();
+        }
+
+        conn.commit(); // hoàn tất giao dịch
         JOptionPane.showMessageDialog(null, "Hủy đặt phòng thành công!");
         loadBookingsToTable(table);
 
     } catch (SQLException e) {
+        e.printStackTrace();
         JOptionPane.showMessageDialog(null, "Lỗi khi hủy đặt phòng: " + e.getMessage());
     }
 }
+
     public static void delete(JTable table) {
     int row = table.getSelectedRow();
     if (row < 0) {
@@ -169,11 +242,30 @@ public class BookingDAO {
     int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
 
     try (Connection conn = DatabaseConnection.getConnection()) {
-        String sql = "DELETE FROM bookings WHERE BookingId = ?";
-        PreparedStatement stmt = conn.prepareStatement(sql);
-        stmt.setInt(1, bookingId);
-        stmt.executeUpdate();
+        conn.setAutoCommit(false); // đảm bảo atomicity
 
+        // Xóa booked services trước
+        String sqlDeleteServices = "DELETE FROM bookedservices WHERE BookingId = ?";
+        try (PreparedStatement stmt1 = conn.prepareStatement(sqlDeleteServices)) {
+            stmt1.setInt(1, bookingId);
+            stmt1.executeUpdate();
+        }
+
+        // Xóa invoice (nếu có)
+        String sqlDeleteInvoice = "DELETE FROM invoices WHERE BookingId = ?";
+        try (PreparedStatement stmt2 = conn.prepareStatement(sqlDeleteInvoice)) {
+            stmt2.setInt(1, bookingId);
+            stmt2.executeUpdate();
+        }
+
+        // Xóa booking cuối cùng
+        String sqlDeleteBooking = "DELETE FROM bookings WHERE BookingId = ?";
+        try (PreparedStatement stmt3 = conn.prepareStatement(sqlDeleteBooking)) {
+            stmt3.setInt(1, bookingId);
+            stmt3.executeUpdate();
+        }
+
+        conn.commit();
         JOptionPane.showMessageDialog(null, "Xóa thành công.");
         loadBookingsToTable(table);
     } catch (SQLException e) {
@@ -182,6 +274,48 @@ public class BookingDAO {
     }
 }
 
+public static void checkOutAtPay(int bookingId) {
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        conn.setAutoCommit(false); // Start transaction
+
+        // 1. Get RoomId of this booking
+        int roomId = -1;
+        String getRoomIdSQL = "SELECT RoomId FROM bookings WHERE BookingId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(getRoomIdSQL)) {
+            stmt.setInt(1, bookingId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                roomId = rs.getInt("RoomId");
+            } else {
+                JOptionPane.showMessageDialog(null, "Không tìm thấy phòng cho booking này.");
+                conn.rollback();
+                return;
+            }
+        }
+
+        // 2. Update booking status to 'CheckedOut' and set ActualCheckOutDate
+        String updateBookingSQL = "UPDATE bookings SET ActualCheckOutDate = NOW(), Status = 'CheckedOut' WHERE BookingId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(updateBookingSQL)) {
+            stmt.setInt(1, bookingId);
+            stmt.executeUpdate();
+        }
+
+        // 3. Update room status to 'Available'
+        String updateRoomSQL = "UPDATE rooms SET Status = 'Available' WHERE RoomId = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(updateRoomSQL)) {
+            stmt.setInt(1, roomId);
+            stmt.executeUpdate();
+        }
+
+        conn.commit(); // Complete transaction
+        JOptionPane.showMessageDialog(null, "Trả phòng thành công!");
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi trả phòng: " + e.getMessage());
+    }
+}
 }
 
 

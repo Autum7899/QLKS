@@ -7,6 +7,8 @@ package qlks;
 //import static btl_thlt_java.MuonTra.setupTableAppearance;
 import com.mysql.cj.result.Row;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,10 +22,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.table.DefaultTableModel;
+import java.lang.reflect.Field;
+import javax.swing.JTextArea;
+import javax.swing.JTextPane;
+
 
 /**
  *
@@ -39,16 +50,178 @@ public class HomePage extends RoundedFrame {
     public HomePage() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
+        
 //        setupTableAppearance(tblThongKe);
 //        if ("User".equals(UserInfo.loggedInRole)) {
 //    manageUsers.setVisible(false);
-//}
+//}     
+
+        updateRoomButtonColors(this);
+        loadDashboardToTextArea(textActivities);
         displayUsername.setText(UserInfo.loggedInUsername) ;
     }
+    public static void loadDashboardToTextArea(JTextPane txtPane) {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        StringBuilder sb = new StringBuilder("<html><body style='font-family:Segoe UI;font-size:12px;'>");
+
+        // --- 1. Hoạt động trong ngày ---
+sb.append("<b><span style='color:green;'>🟢 Hoạt động trong ngày:</span></b><br><br>");
+
+// 1. Đã check-in hôm nay
+sb.append("<u>✔ Đã check-in hôm nay:</u><br>");
+String sqlTodayCheckIn = """
+    SELECT c.FullName, r.RoomNumber, b.Status
+    FROM bookings b
+    JOIN customers c ON b.CustomerId = c.CustomerId
+    JOIN rooms r ON b.RoomId = r.RoomId
+    WHERE DATE(b.ActualCheckInDate) = CURDATE()
+""";
+try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckIn);
+     ResultSet rs = stmt.executeQuery()) {
+    int count = 0;
+    while (rs.next()) {
+        count++;
+        sb.append(String.format("- %s | Phòng %s | %s<br>",
+                rs.getString("FullName"),
+                rs.getString("RoomNumber"),
+                rs.getString("Status")));
+    }
+    if (count == 0) sb.append("<i>Không có.</i><br>");
+}
+
+// 2. Đã check-out hôm nay
+sb.append("<br><u>✔ Đã check-out hôm nay:</u><br>");
+String sqlTodayCheckOut = """
+    SELECT c.FullName, r.RoomNumber, b.Status
+    FROM bookings b
+    JOIN customers c ON b.CustomerId = c.CustomerId
+    JOIN rooms r ON b.RoomId = r.RoomId
+    WHERE DATE(b.ActualCheckOutDate) = CURDATE()
+""";
+try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
+     ResultSet rs = stmt.executeQuery()) {
+    int count = 0;
+    while (rs.next()) {
+        count++;
+        sb.append(String.format("- %s | Phòng %s | %s<br>",
+                rs.getString("FullName"),
+                rs.getString("RoomNumber"),
+                rs.getString("Status")));
+    }
+    if (count == 0) sb.append("<i>Không có.</i><br>");
+}
+
+        // --- 2. Dự kiến Check-in ---
+        sb.append("<br><b><span style='color:#007bff;'>📥 Dự kiến Check-in:</span></b><br>");
+        String sqlExpectedCheckIn = """
+            SELECT c.FullName, r.RoomNumber, b.Status
+            FROM bookings b
+            JOIN customers c ON b.CustomerId = c.CustomerId
+            JOIN rooms r ON b.RoomId = r.RoomId
+            WHERE DATE(b.CheckInDate) = CURDATE() AND b.ActualCheckInDate IS NULL
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sqlExpectedCheckIn);
+             ResultSet rs = stmt.executeQuery()) {
+            int count = 0;
+            while (rs.next()) {
+                count++;
+                sb.append(String.format("- %s | Phòng %s | Trạng thái: %s<br>",
+                        rs.getString("FullName"),
+                        rs.getString("RoomNumber"),
+                        rs.getString("Status")));
+            }
+            if (count == 0) sb.append("<i>Không có.</i><br>");
+        }
+
+        // --- 3. Dự kiến Check-out ---
+        sb.append("<br><b><span style='color:#dc3545;'>📤 Dự kiến Check-out:</span></b><br>");
+        String sqlExpectedCheckOut = """
+            SELECT c.FullName, r.RoomNumber, b.Status
+            FROM bookings b
+            JOIN customers c ON b.CustomerId = c.CustomerId
+            JOIN rooms r ON b.RoomId = r.RoomId
+            WHERE DATE(b.CheckOutDate) = CURDATE() AND b.ActualCheckOutDate IS NULL
+        """;
+        try (PreparedStatement stmt = conn.prepareStatement(sqlExpectedCheckOut);
+             ResultSet rs = stmt.executeQuery()) {
+            int count = 0;
+            while (rs.next()) {
+                count++;
+                sb.append(String.format("- %s | Phòng %s | Trạng thái: %s<br>",
+                        rs.getString("FullName"),
+                        rs.getString("RoomNumber"),
+                        rs.getString("Status")));
+            }
+            if (count == 0) sb.append("<i>Không có.</i><br>");
+        }
+
+        sb.append("</body></html>");
+        txtPane.setContentType("text/html"); // để hiểu HTML
+        txtPane.setText(sb.toString());
+        txtPane.setCaretPosition(0); // scroll lên đầu
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        txtPane.setText("❌ Lỗi khi tải dữ liệu: " + e.getMessage());
+    }
+}
+
+
+    public static void updateRoomButtonColors(HomePage homepage) {
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "SELECT RoomNumber, Status FROM rooms";
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+
+        Map<String, String> roomStatusMap = new HashMap<>();
+        while (rs.next()) {
+            String roomNumber = rs.getString("RoomNumber");
+            String status = rs.getString("Status");
+            roomStatusMap.put(roomNumber, status);
+        }
+
+        Class<?> cls = HomePage.class;
+
+        for (Map.Entry<String, String> entry : roomStatusMap.entrySet()) {
+            String roomNumber = entry.getKey();
+            String status = entry.getValue();
+            String fieldName = "p" + roomNumber;
+
+            try {
+                Field field = cls.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                Object obj = field.get(homepage); // ✅ đúng đối tượng chứa p101
+
+                if (obj instanceof JButton btn) {
+    switch (status.toLowerCase()) {
+        case "available" -> btn.setBackground(new java.awt.Color(34, 197, 94));
+        case "booked"    -> btn.setBackground(new java.awt.Color(239, 68, 68));
+        default           -> btn.setBackground(new java.awt.Color(107, 114, 128));
+    }
+
+    btn.setOpaque(true);
+    btn.setContentAreaFilled(true);
+    btn.setBorderPainted(false);
+
+    System.out.println("✔ " + fieldName + " -> " + status);
+}
+            } catch (NoSuchFieldException e) {
+                System.out.println("⚠ Không tìm thấy nút: " + fieldName);
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(null, "Lỗi khi cập nhật trạng thái phòng: " + e.getMessage());
+    }
+}
+
+
+
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
         jMenuItem1 = new javax.swing.JMenuItem();
+        jLabel8 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         signout = new javax.swing.JLabel();
         displayUsername = new javax.swing.JLabel();
@@ -67,6 +240,39 @@ public class HomePage extends RoundedFrame {
         jLabel4 = new javax.swing.JLabel();
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel8 = new javax.swing.JPanel();
+        jLabel7 = new javax.swing.JLabel();
+        pnlRoomLayout = new javax.swing.JPanel();
+        p502 = new javax.swing.JButton();
+        suite = new javax.swing.JButton();
+        p501 = new javax.swing.JButton();
+        p401 = new javax.swing.JButton();
+        p402 = new javax.swing.JButton();
+        p403 = new javax.swing.JButton();
+        p303 = new javax.swing.JButton();
+        p203 = new javax.swing.JButton();
+        p202 = new javax.swing.JButton();
+        p201 = new javax.swing.JButton();
+        p301 = new javax.swing.JButton();
+        p302 = new javax.swing.JButton();
+        p102 = new javax.swing.JButton();
+        p101 = new javax.swing.JButton();
+        p103 = new javax.swing.JButton();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jTextField4 = new javax.swing.JTextField();
+        jLabel11 = new javax.swing.JLabel();
+        p503 = new javax.swing.JButton();
+        suite1 = new javax.swing.JButton();
+        suite2 = new javax.swing.JButton();
+        jTextField7 = new javax.swing.JTextField();
+        refresh = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
+        jButton6 = new RoundedButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        textActivities = new javax.swing.JTextPane();
+        jPanel4 = new javax.swing.JPanel();
+        btnAddCustomer = new RoundedButton();
+        btnAddBooking = new RoundedButton();
         jPanel9 = new javax.swing.JPanel();
         billing = new qlks.RoundedButton();
         booking = new qlks.RoundedButton();
@@ -79,8 +285,12 @@ public class HomePage extends RoundedFrame {
 
         jMenuItem1.setText("jMenuItem1");
 
+        jLabel8.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jLabel8.setText("\t Suite");
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Hotel management system ");
+        setBackground(new java.awt.Color(252, 244, 234));
         setIconImage(new ImageIcon(getClass().getResource("/Icon/Title.png")).getImage());
         setUndecorated(true);
         setResizable(false);
@@ -231,6 +441,340 @@ public class HomePage extends RoundedFrame {
 
         jPanel8.setBackground(new java.awt.Color(252, 244, 234));
         jPanel8.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jPanel8.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 20, -1, -1));
+
+        pnlRoomLayout.setBackground(new java.awt.Color(255, 255, 255));
+        pnlRoomLayout.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Sơ  đồ phòng", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
+        pnlRoomLayout.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        p502.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p502.setText("502");
+        p502.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p502.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p502.setPreferredSize(new java.awt.Dimension(200, 100));
+        p502.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p502.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p502ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p502, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 20, 100, -1));
+
+        suite.setBackground(new java.awt.Color(9, 38, 41));
+        suite.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        suite.setForeground(new java.awt.Color(255, 255, 255));
+        suite.setText("Standard");
+        suite.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        suite.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        suite.setPreferredSize(new java.awt.Dimension(200, 100));
+        suite.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        suite.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                suiteActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(suite, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 350, 90, 210));
+
+        p501.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p501.setText("501");
+        p501.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p501.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p501.setPreferredSize(new java.awt.Dimension(200, 100));
+        p501.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p501.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p501ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p501, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 20, 100, -1));
+
+        p401.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p401.setText("401");
+        p401.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p401.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p401.setPreferredSize(new java.awt.Dimension(200, 100));
+        p401.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p401.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p401ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p401, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 130, 100, -1));
+
+        p402.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p402.setText("402");
+        p402.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p402.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p402.setPreferredSize(new java.awt.Dimension(200, 100));
+        p402.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p402.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p402ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p402, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 130, 100, -1));
+
+        p403.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p403.setText("403");
+        p403.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p403.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p403.setPreferredSize(new java.awt.Dimension(200, 100));
+        p403.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p403.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p403ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p403, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 130, 100, -1));
+
+        p303.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p303.setText("303");
+        p303.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p303.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p303.setPreferredSize(new java.awt.Dimension(200, 100));
+        p303.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p303.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p303ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p303, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 240, 100, -1));
+
+        p203.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p203.setText("203");
+        p203.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p203.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p203.setPreferredSize(new java.awt.Dimension(200, 100));
+        p203.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p203.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p203ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p203, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 350, 100, -1));
+
+        p202.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p202.setText("202");
+        p202.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p202.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p202.setPreferredSize(new java.awt.Dimension(200, 100));
+        p202.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p202.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p202ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p202, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 350, 100, -1));
+
+        p201.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p201.setText("201");
+        p201.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p201.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p201.setPreferredSize(new java.awt.Dimension(200, 100));
+        p201.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p201.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p201ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p201, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 350, 100, -1));
+
+        p301.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p301.setText("301");
+        p301.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p301.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p301.setPreferredSize(new java.awt.Dimension(200, 100));
+        p301.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p301.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p301ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p301, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 240, 100, -1));
+
+        p302.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p302.setText("302");
+        p302.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p302.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p302.setPreferredSize(new java.awt.Dimension(200, 100));
+        p302.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p302.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p302ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p302, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 240, 100, -1));
+
+        p102.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p102.setText("102");
+        p102.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p102.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p102.setPreferredSize(new java.awt.Dimension(200, 100));
+        p102.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p102.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p102ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p102, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 460, 100, -1));
+
+        p101.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p101.setText("101");
+        p101.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p101.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p101.setPreferredSize(new java.awt.Dimension(200, 100));
+        p101.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p101.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p101ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p101, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 460, 100, -1));
+
+        p103.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p103.setText("103");
+        p103.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p103.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p103.setPreferredSize(new java.awt.Dimension(200, 100));
+        p103.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p103.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p103ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p103, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 460, 100, -1));
+
+        jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel6.setText("Phòng trống");
+        pnlRoomLayout.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 590, 80, 20));
+
+        jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        pnlRoomLayout.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 440, -1, -1));
+
+        jTextField4.setEditable(false);
+        jTextField4.setBackground(new java.awt.Color(34, 197, 94));
+        jTextField4.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        pnlRoomLayout.add(jTextField4, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 590, 100, -1));
+
+        jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel11.setText("Phòng đã được đặt");
+        pnlRoomLayout.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 570, 120, 20));
+
+        p503.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        p503.setText("503");
+        p503.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        p503.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        p503.setPreferredSize(new java.awt.Dimension(200, 100));
+        p503.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        p503.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                p503ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(p503, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 20, 100, -1));
+
+        suite1.setBackground(new java.awt.Color(9, 38, 41));
+        suite1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        suite1.setForeground(new java.awt.Color(255, 255, 255));
+        suite1.setText("Suite");
+        suite1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        suite1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        suite1.setPreferredSize(new java.awt.Dimension(200, 100));
+        suite1.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        suite1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                suite1ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(suite1, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 20, 90, 100));
+
+        suite2.setBackground(new java.awt.Color(9, 38, 41));
+        suite2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        suite2.setForeground(new java.awt.Color(255, 255, 255));
+        suite2.setText("Deluxe");
+        suite2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        suite2.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        suite2.setPreferredSize(new java.awt.Dimension(200, 100));
+        suite2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        suite2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                suite2ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(suite2, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 130, 90, 210));
+
+        jTextField7.setEditable(false);
+        jTextField7.setBackground(new java.awt.Color(239, 68, 68));
+        jTextField7.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        jTextField7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField7ActionPerformed(evt);
+            }
+        });
+        pnlRoomLayout.add(jTextField7, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 570, 100, -1));
+
+        refresh.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/refresh.png"))); // NOI18N
+        refresh.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        refresh.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                refreshMouseClicked(evt);
+            }
+        });
+        pnlRoomLayout.add(refresh, new org.netbeans.lib.awtextra.AbsoluteConstraints(410, 580, -1, -1));
+
+        jPanel8.add(pnlRoomLayout, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 10, 450, 620));
+
+        jPanel3.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Hoạt động trong ngày", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
+        jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jButton6.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        jButton6.setForeground(new java.awt.Color(255, 255, 255));
+        jButton6.setText("Hủy đặt");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+        jPanel3.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(33, 469, 475, 80));
+
+        jScrollPane2.setViewportView(textActivities);
+
+        jPanel3.add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 40, 430, 360));
+
+        jPanel8.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 10, 490, 430));
+
+        jPanel4.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "lối tắt", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
+        jPanel4.setOpaque(false);
+        jPanel4.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        btnAddCustomer.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnAddCustomer.setForeground(new java.awt.Color(255, 255, 255));
+        btnAddCustomer.setText("Thêm khách hàng");
+        btnAddCustomer.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAddCustomer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAddCustomerActionPerformed(evt);
+            }
+        });
+        jPanel4.add(btnAddCustomer, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 30, 220, 130));
+
+        btnAddBooking.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnAddBooking.setForeground(new java.awt.Color(255, 255, 255));
+        btnAddBooking.setText("Đặt phòng");
+        btnAddBooking.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnAddBooking.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAddBookingActionPerformed(evt);
+            }
+        });
+        jPanel4.add(btnAddBooking, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 30, 220, 130));
+
+        jPanel8.add(jPanel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 450, 490, 180));
+
         jTabbedPane1.addTab("tab1", jPanel8);
 
         jPanel9.setBackground(new java.awt.Color(252, 244, 234));
@@ -383,6 +927,9 @@ public class HomePage extends RoundedFrame {
 
     private void billingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_billingActionPerformed
         // TODO add your handling code here:
+        QLHoaDon hd = new QLHoaDon();
+            hd.setVisible(true);
+            this.dispose();
     }//GEN-LAST:event_billingActionPerformed
 
     private void bookingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bookingActionPerformed
@@ -445,6 +992,104 @@ public class HomePage extends RoundedFrame {
          jTabbedPane1.setSelectedIndex(2);
     }//GEN-LAST:event_statisticMouseClicked
 
+    private void p502ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p502ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p502ActionPerformed
+
+    private void suiteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_suiteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_suiteActionPerformed
+
+    private void p403ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p403ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p403ActionPerformed
+
+    private void p402ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p402ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p402ActionPerformed
+
+    private void p401ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p401ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p401ActionPerformed
+
+    private void p303ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p303ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p303ActionPerformed
+
+    private void p302ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p302ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p302ActionPerformed
+
+    private void p301ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p301ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p301ActionPerformed
+
+    private void p203ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p203ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p203ActionPerformed
+
+    private void p202ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p202ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p202ActionPerformed
+
+    private void p201ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p201ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p201ActionPerformed
+
+    private void p103ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p103ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p103ActionPerformed
+
+    private void p102ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p102ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p102ActionPerformed
+
+    private void p101ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p101ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p101ActionPerformed
+
+    private void p501ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p501ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p501ActionPerformed
+
+    private void p503ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p503ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_p503ActionPerformed
+
+    private void suite1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_suite1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_suite1ActionPerformed
+
+    private void suite2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_suite2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_suite2ActionPerformed
+
+    private void jTextField7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField7ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField7ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void btnAddCustomerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddCustomerActionPerformed
+        // TODO add your handling code here:
+
+    }//GEN-LAST:event_btnAddCustomerActionPerformed
+
+    private void btnAddBookingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddBookingActionPerformed
+        // TODO add your handling code here:
+                AddForm form = new AddForm();
+        form.setVisible(true);
+
+    }//GEN-LAST:event_btnAddBookingActionPerformed
+
+    private void refreshMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_refreshMouseClicked
+        // TODO add your handling code here:
+        updateRoomButtonColors(this);
+
+    }//GEN-LAST:event_refreshMouseClicked
+
     /**
      * @param args the command line arguments
      */
@@ -484,27 +1129,61 @@ public class HomePage extends RoundedFrame {
     private javax.swing.JLabel Logo;
     private javax.swing.JButton billing;
     private javax.swing.JButton booking;
+    private javax.swing.JButton btnAddBooking;
+    private javax.swing.JButton btnAddCustomer;
     private javax.swing.JLabel close;
     private javax.swing.JButton customer;
     private javax.swing.JLabel displayUsername;
     private javax.swing.JLabel homepage;
+    private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel11;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTextField jTextField4;
+    private javax.swing.JTextField jTextField7;
     private javax.swing.JLabel manage;
+    private javax.swing.JButton p101;
+    private javax.swing.JButton p102;
+    private javax.swing.JButton p103;
+    private javax.swing.JButton p201;
+    private javax.swing.JButton p202;
+    private javax.swing.JButton p203;
+    private javax.swing.JButton p301;
+    private javax.swing.JButton p302;
+    private javax.swing.JButton p303;
+    private javax.swing.JButton p401;
+    private javax.swing.JButton p402;
+    private javax.swing.JButton p403;
+    private javax.swing.JButton p501;
+    private javax.swing.JButton p502;
+    private javax.swing.JButton p503;
+    private javax.swing.JPanel pnlRoomLayout;
+    private javax.swing.JLabel refresh;
     private javax.swing.JButton room;
     private javax.swing.JButton service;
     private javax.swing.JLabel signout;
     private javax.swing.JButton staff;
     private javax.swing.JLabel statistic;
+    private javax.swing.JButton suite;
+    private javax.swing.JButton suite1;
+    private javax.swing.JButton suite2;
+    private javax.swing.JTextPane textActivities;
     // End of variables declaration//GEN-END:variables
 }

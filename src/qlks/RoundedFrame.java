@@ -79,27 +79,4 @@ public class RoundedFrame extends JFrame {
         
         g2d.dispose();
     }
-    
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            RoundedFrame frame = new RoundedFrame("Rounded JFrame Example", 50);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            
-            // Set size BEFORE making it visible
-            frame.setSize(400, 300);
-
-            JPanel mainPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 20));
-            // The background of this panel is what will be visible
-            mainPanel.setBackground(new Color(240, 248, 255)); // AliceBlue color
-
-            mainPanel.add(new JLabel("This is a JFrame with rounded corners!"));
-            JButton closeButton = new JButton("Close");
-            closeButton.addActionListener(e -> frame.dispose());
-            mainPanel.add(closeButton);
-
-            frame.setContentPane(mainPanel);
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-        });
-    }
 }
