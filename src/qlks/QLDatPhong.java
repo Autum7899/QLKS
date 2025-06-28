@@ -343,8 +343,10 @@ public class QLDatPhong extends RoundedFrame {
 
     private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked
         // TODO add your handling code here:
-        new HomePage().setVisible(true);
-        this.dispose();
+        HomePage home = new HomePage();
+         home.setSelectedTab(1);
+         home.setVisible(true);
+         this.dispose();
     }//GEN-LAST:event_ReturnMouseClicked
 
     private void btnCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCancelActionPerformed

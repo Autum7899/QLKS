@@ -7,6 +7,7 @@ package qlks;
 //import static btl_thlt_java.MuonTra.setupTableAppearance;
 import com.mysql.cj.result.Row;
 import dao.BookingDAO;
+import dao.loadData;
 import dto.Booking;
 import dto.Customer;
 import dto.Room;
@@ -25,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.swing.DefaultComboBoxModel;
@@ -39,6 +41,7 @@ import qlks.ThemedTable;
  */
 public class QLNguoiDung extends RoundedFrame {
     private int mouseX, mouseY;
+    int selectedUserId;
 
 
 
@@ -49,10 +52,38 @@ public class QLNguoiDung extends RoundedFrame {
     public QLNguoiDung() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
+        loadData.loadDataToTable(tNguoiDung, "users");
     }
-    
+    public void resetUserFields(){
+                   if (tNguoiDung != null) {
+        tNguoiDung.clearSelection(); // Clears any selection in the table
+    }
+        selectedUserId=0;
+    txtUsername.setText("");
+    txtPassword.setText("");
+    txtMail.setText("");
+    txtName.setText("");
+    txtSDT.setText("");
+    cmbRole.setSelectedItem(0);
+    }
+    public void loadNguoiDungToFields() {
+    int row = tNguoiDung.getSelectedRow();
+    selectedUserId = Integer.parseInt(tNguoiDung.getValueAt(row, 0).toString());
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một người dùng.");
+        return;
+    }
+
+    // Giả sử cột lần lượt là: ID, Username, Password, Email, Phone
+    txtUsername.setText(tNguoiDung.getValueAt(row, 1).toString());
+    txtPassword.setText(tNguoiDung.getValueAt(row, 2).toString());
+    txtMail.setText(tNguoiDung.getValueAt(row, 4).toString());
+    txtName.setText(tNguoiDung.getValueAt(row, 3).toString());
+    txtSDT.setText(tNguoiDung.getValueAt(row, 5).toString());
+    String role = tNguoiDung.getValueAt(row, 6).toString();
+    cmbRole.setSelectedItem(role);
+        
+}
    
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -61,6 +92,7 @@ public class QLNguoiDung extends RoundedFrame {
         jOptionPane1 = new javax.swing.JOptionPane();
         btnThem3 = new RoundedButton();
         jPanel2 = new javax.swing.JPanel();
+        Return = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
@@ -71,11 +103,10 @@ public class QLNguoiDung extends RoundedFrame {
         jLabel5 = new javax.swing.JLabel();
         btnLamMoi = new RoundedButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new ThemedTable();
+        tNguoiDung = new ThemedTable();
+        txtUsername = new javax.swing.JTextField();
+        txtPassword = new javax.swing.JTextField();
         txtName = new javax.swing.JTextField();
-        txtID = new javax.swing.JTextField();
-        txtPhone = new javax.swing.JTextField();
-        txtAdress = new javax.swing.JTextField();
         txtMail = new javax.swing.JTextField();
         jLabel6 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
@@ -85,7 +116,8 @@ public class QLNguoiDung extends RoundedFrame {
         btnSua = new RoundedButton();
         btnXoa = new RoundedButton();
         jLabel12 = new javax.swing.JLabel();
-        txtMail1 = new javax.swing.JTextField();
+        txtSDT = new javax.swing.JTextField();
+        cmbRole = new javax.swing.JComboBox<>();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -121,6 +153,20 @@ public class QLNguoiDung extends RoundedFrame {
         });
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
+        Return.setBackground(new java.awt.Color(252, 244, 234));
+        Return.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        Return.setForeground(new java.awt.Color(0, 77, 79));
+        Return.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        Return.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/back.png"))); // NOI18N
+        Return.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Return.setOpaque(true);
+        Return.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ReturnMouseClicked(evt);
+            }
+        });
+        jPanel2.add(Return, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 60, 60));
+
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 250, 60));
 
@@ -153,12 +199,12 @@ public class QLNguoiDung extends RoundedFrame {
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jPanel3.setBackground(new java.awt.Color(255, 255, 255));
-        jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Quản lý dịch vụ", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
+        jPanel3.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Quản lý người dùng", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
         jPanel3.setOpaque(false);
         jPanel3.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel5.setText("Loại phòng");
+        jLabel5.setText("Mật khẩu");
         jPanel3.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 120, 150, 40));
 
         btnLamMoi.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -170,48 +216,52 @@ public class QLNguoiDung extends RoundedFrame {
                 btnLamMoiActionPerformed(evt);
             }
         });
-        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 430, 100, 40));
+        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 430, 110, 40));
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tNguoiDung.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null},
-                {null, null, null, null, null, null},
-                {null, null, null, null, null, null},
-                {null, null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "Mã phòng", "Số phòng", "Loại phòng", "Giá", "Trạng thái", "Mô tả"
+                "Mã User", "Username", "Password", "Tên ND", "Email", "SĐT", "Role"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
-
-        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 30, 440, 450));
-
-        txtName.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtNameActionPerformed(evt);
+        tNguoiDung.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tNguoiDungMouseClicked(evt);
             }
         });
-        jPanel3.add(txtName, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 60, 250, 40));
-        jPanel3.add(txtID, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
-        jPanel3.add(txtPhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
-        jPanel3.add(txtAdress, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 240, 250, 40));
-        jPanel3.add(txtMail, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 360, 250, 40));
+        jScrollPane1.setViewportView(tNguoiDung);
+
+        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 20, 440, 460));
+
+        txtUsername.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtUsernameActionPerformed(evt);
+            }
+        });
+        jPanel3.add(txtUsername, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 60, 250, 40));
+        jPanel3.add(txtPassword, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
+        jPanel3.add(txtName, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
+        jPanel3.add(txtMail, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 240, 250, 40));
 
         jLabel6.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel6.setText("Mô tả");
+        jLabel6.setText("Quyền hạn");
         jPanel3.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 360, 150, 40));
 
         jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel7.setText("Số phòng");
+        jLabel7.setText("Tên người dùng");
         jPanel3.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 60, 150, 40));
 
         jLabel10.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel10.setText("Giá mỗi đêm");
+        jLabel10.setText("Tên người dùng");
         jPanel3.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 180, 150, 40));
 
         jLabel11.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel11.setText("Trạng thái");
+        jLabel11.setText("Email");
         jPanel3.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 240, 150, 40));
 
         btnThem.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -223,7 +273,7 @@ public class QLNguoiDung extends RoundedFrame {
                 btnThemActionPerformed(evt);
             }
         });
-        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 430, 100, 40));
+        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 430, 100, 40));
 
         btnSua.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnSua.setForeground(new java.awt.Color(255, 255, 255));
@@ -234,7 +284,7 @@ public class QLNguoiDung extends RoundedFrame {
                 btnSuaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 430, 100, 40));
+        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 430, 100, 40));
 
         btnXoa.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnXoa.setForeground(new java.awt.Color(255, 255, 255));
@@ -245,12 +295,15 @@ public class QLNguoiDung extends RoundedFrame {
                 btnXoaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 430, 100, 40));
+        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 430, 100, 40));
 
         jLabel12.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel12.setText("Mô tả");
+        jLabel12.setText("Số điện thoại");
         jPanel3.add(jLabel12, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 300, 150, 40));
-        jPanel3.add(txtMail1, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 300, 250, 40));
+        jPanel3.add(txtSDT, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 300, 250, 40));
+
+        cmbRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Admin", "Staff" }));
+        jPanel3.add(cmbRole, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 360, 250, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 950, 490));
 
@@ -277,6 +330,8 @@ this.dispose();
 
     private void btnLamMoiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLamMoiActionPerformed
         // TODO add your handling code here:
+resetUserFields();
+
     }//GEN-LAST:event_btnLamMoiActionPerformed
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
@@ -295,9 +350,22 @@ this.dispose();
         // TODO add your handling code here:
     }//GEN-LAST:event_btnXoaActionPerformed
 
-    private void txtNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNameActionPerformed
+    private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_txtNameActionPerformed
+    }//GEN-LAST:event_txtUsernameActionPerformed
+
+    private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked
+        // TODO add your handling code here:
+        HomePage home = new HomePage();
+         home.setSelectedTab(1);
+         home.setVisible(true);
+         this.dispose();
+    }//GEN-LAST:event_ReturnMouseClicked
+
+    private void tNguoiDungMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tNguoiDungMouseClicked
+        // TODO add your handling code here:
+        loadNguoiDungToFields();
+    }//GEN-LAST:event_tNguoiDungMouseClicked
 
     /**
      * @param args the command line arguments
@@ -1358,12 +1426,14 @@ this.dispose();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel Return;
     private javax.swing.JButton btnLamMoi;
     private javax.swing.JButton btnSua;
     private javax.swing.JButton btnThem;
     private javax.swing.JButton btnThem3;
     private javax.swing.JButton btnXoa;
     private javax.swing.JLabel close;
+    private javax.swing.JComboBox<String> cmbRole;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
@@ -1380,12 +1450,11 @@ this.dispose();
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
-    private javax.swing.JTextField txtAdress;
-    private javax.swing.JTextField txtID;
+    private javax.swing.JTable tNguoiDung;
     private javax.swing.JTextField txtMail;
-    private javax.swing.JTextField txtMail1;
     private javax.swing.JTextField txtName;
-    private javax.swing.JTextField txtPhone;
+    private javax.swing.JTextField txtPassword;
+    private javax.swing.JTextField txtSDT;
+    private javax.swing.JTextField txtUsername;
     // End of variables declaration//GEN-END:variables
 }

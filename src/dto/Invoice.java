@@ -78,23 +78,6 @@ public class Invoice {
     public void setTotalServiceCharge(BigDecimal totalServiceCharge) {
         this.totalServiceCharge = totalServiceCharge;
     }
-
-    public BigDecimal getDiscount() {
-        return discount;
-    }
-
-    public void setDiscount(BigDecimal discount) {
-        this.discount = discount;
-    }
-
-    public BigDecimal getVat() {
-        return vat;
-    }
-
-    public void setVat(BigDecimal vat) {
-        this.vat = vat;
-    }
-
     public BigDecimal getGrandTotal() {
         return grandTotal;
     }
@@ -122,7 +105,6 @@ public class Invoice {
     public int getIssuedByUserId() {
         return issuedByUserId;
     }
-
     public void setIssuedByUserId(int issuedByUserId) {
         this.issuedByUserId = issuedByUserId;
     }

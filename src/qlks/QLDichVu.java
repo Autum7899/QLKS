@@ -7,6 +7,7 @@ package qlks;
 //import static btl_thlt_java.MuonTra.setupTableAppearance;
 import com.mysql.cj.result.Row;
 import dao.BookingDAO;
+import dao.loadData;
 import dto.Booking;
 import dto.Customer;
 import dto.Room;
@@ -39,9 +40,7 @@ import qlks.ThemedTable;
  */
 public class QLDichVu extends RoundedFrame {
     private int mouseX, mouseY;
-
-
-
+    int selectedServiceId;
     /**
      * Creates new form HomePage
      */
@@ -49,10 +48,31 @@ public class QLDichVu extends RoundedFrame {
     public QLDichVu() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
+        loadData.loadDataToTable(tDichVu, "services");
     }
-    
+    public void resetServiceFields(){
+           if (tDichVu != null) {
+        tDichVu.clearSelection(); // Clears any selection in the table
+    }
+        selectedServiceId=0;
+        txtName.setText("");
+        txtPrice.setText("");
+        txtDesc.setText("");
+    }
+   public void loadDichVuToFields(){
+    int row = tDichVu.getSelectedRow();
+    selectedServiceId = Integer.parseInt(tDichVu.getValueAt(row, 0).toString());
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một dịch vụ.");
+        return;
+    }
+
+    // Giả định cột 0 = ID, 1 = ServiceName, 2 = Price, 3 = Description
+    txtName.setText(tDichVu.getValueAt(row, 1).toString());
+    txtPrice.setText(tDichVu.getValueAt(row, 2).toString());
+    txtDesc.setText(tDichVu.getValueAt(row, 3).toString());
+}
+ 
    
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -61,6 +81,7 @@ public class QLDichVu extends RoundedFrame {
         jOptionPane1 = new javax.swing.JOptionPane();
         btnThem3 = new RoundedButton();
         jPanel2 = new javax.swing.JPanel();
+        Return = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
@@ -72,10 +93,10 @@ public class QLDichVu extends RoundedFrame {
         jLabel5 = new javax.swing.JLabel();
         btnLamMoi = new RoundedButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new ThemedTable();
+        tDichVu = new ThemedTable();
         txtName = new javax.swing.JTextField();
-        txtID = new javax.swing.JTextField();
-        txtPhone = new javax.swing.JTextField();
+        txtPrice = new javax.swing.JTextField();
+        txtDesc = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
         btnThem = new RoundedButton();
@@ -115,6 +136,20 @@ public class QLDichVu extends RoundedFrame {
             }
         });
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        Return.setBackground(new java.awt.Color(252, 244, 234));
+        Return.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        Return.setForeground(new java.awt.Color(0, 77, 79));
+        Return.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        Return.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/back.png"))); // NOI18N
+        Return.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Return.setOpaque(true);
+        Return.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ReturnMouseClicked(evt);
+            }
+        });
+        jPanel2.add(Return, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 60, 60));
 
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 250, 60));
@@ -163,7 +198,7 @@ public class QLDichVu extends RoundedFrame {
         jPanel3.add(jButton6, new org.netbeans.lib.awtextra.AbsoluteConstraints(33, 469, 475, 80));
 
         jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel5.setText("Loại phòng");
+        jLabel5.setText("Giá dịch vụ");
         jPanel3.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 120, 150, 40));
 
         btnLamMoi.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -175,9 +210,9 @@ public class QLDichVu extends RoundedFrame {
                 btnLamMoiActionPerformed(evt);
             }
         });
-        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 360, 100, 40));
+        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 360, 110, 40));
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tDichVu.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
                 {null, null, null, null},
@@ -188,19 +223,24 @@ public class QLDichVu extends RoundedFrame {
                 "Mã DV", "Tên  DV", "Giá", "Mô tả"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        tDichVu.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tDichVuMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tDichVu);
 
-        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 30, 440, 380));
+        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 20, 440, 390));
         jPanel3.add(txtName, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 60, 250, 40));
-        jPanel3.add(txtID, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
-        jPanel3.add(txtPhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
+        jPanel3.add(txtPrice, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
+        jPanel3.add(txtDesc, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
 
         jLabel7.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel7.setText("Số phòng");
+        jLabel7.setText("Tên dịch vụ");
         jPanel3.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 60, 150, 40));
 
         jLabel10.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel10.setText("Giá mỗi đêm");
+        jLabel10.setText("Mô tả");
         jPanel3.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 180, 150, 40));
 
         btnThem.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -212,7 +252,7 @@ public class QLDichVu extends RoundedFrame {
                 btnThemActionPerformed(evt);
             }
         });
-        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 360, 100, 40));
+        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 360, 100, 40));
 
         btnSua.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnSua.setForeground(new java.awt.Color(255, 255, 255));
@@ -223,7 +263,7 @@ public class QLDichVu extends RoundedFrame {
                 btnSuaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 360, 100, 40));
+        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 360, 100, 40));
 
         btnXoa.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnXoa.setForeground(new java.awt.Color(255, 255, 255));
@@ -234,7 +274,7 @@ public class QLDichVu extends RoundedFrame {
                 btnXoaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 360, 100, 40));
+        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 360, 100, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 950, 420));
 
@@ -265,6 +305,7 @@ this.dispose();
 
     private void btnLamMoiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLamMoiActionPerformed
         // TODO add your handling code here:
+    resetServiceFields();
     }//GEN-LAST:event_btnLamMoiActionPerformed
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
@@ -282,6 +323,19 @@ this.dispose();
     private void btnXoaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnXoaActionPerformed
+
+    private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked
+        // TODO add your handling code here:
+        HomePage home = new HomePage();
+         home.setSelectedTab(1);
+         home.setVisible(true);
+         this.dispose();
+    }//GEN-LAST:event_ReturnMouseClicked
+
+    private void tDichVuMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tDichVuMouseClicked
+        // TODO add your handling code here:
+        loadDichVuToFields();
+    }//GEN-LAST:event_tDichVuMouseClicked
 
     /**
      * @param args the command line arguments
@@ -1342,6 +1396,7 @@ this.dispose();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel Return;
     private javax.swing.JButton btnLamMoi;
     private javax.swing.JButton btnSua;
     private javax.swing.JButton btnThem;
@@ -1362,9 +1417,9 @@ this.dispose();
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
-    private javax.swing.JTextField txtID;
+    private javax.swing.JTable tDichVu;
+    private javax.swing.JTextField txtDesc;
     private javax.swing.JTextField txtName;
-    private javax.swing.JTextField txtPhone;
+    private javax.swing.JTextField txtPrice;
     // End of variables declaration//GEN-END:variables
 }

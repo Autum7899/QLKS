@@ -50,15 +50,18 @@ public class HomePage extends RoundedFrame {
     public HomePage() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
-        
-//        setupTableAppearance(tblThongKe);
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
-//}     
+        if ("Staff".equals(UserInfo.loggedInRole)) {
+    staff.setEnabled(false);
+        }     
 
         updateRoomButtonColors(this);
         loadDashboardToTextArea(textActivities);
         displayUsername.setText(UserInfo.loggedInUsername) ;
+    }
+        public void setSelectedTab(int tabIndex) {
+        if (tabIndex >= 0 && tabIndex < jTabbedPane1.getTabCount()) {
+            jTabbedPane1.setSelectedIndex(tabIndex);
+        }
     }
     public static void loadDashboardToTextArea(JTextPane txtPane) {
     try (Connection conn = DatabaseConnection.getConnection()) {
@@ -941,18 +944,26 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
 
     private void serviceActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_serviceActionPerformed
         // TODO add your handling code here:
+        new QLDichVu().setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_serviceActionPerformed
 
     private void staffActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_staffActionPerformed
         // TODO add your handling code here:
+        new QLNguoiDung().setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_staffActionPerformed
 
     private void roomActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_roomActionPerformed
         // TODO add your handling code here:
+        new QLPhong().setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_roomActionPerformed
 
     private void customerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_customerActionPerformed
         // TODO add your handling code here:
+        new QLKhachHang().setVisible(true);
+        this.dispose();
     }//GEN-LAST:event_customerActionPerformed
 
     private void signoutMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_signoutMouseClicked

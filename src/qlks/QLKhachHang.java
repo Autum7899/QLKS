@@ -7,6 +7,7 @@ package qlks;
 //import static btl_thlt_java.MuonTra.setupTableAppearance;
 import com.mysql.cj.result.Row;
 import dao.BookingDAO;
+import dao.loadData;
 import dto.Booking;
 import dto.Customer;
 import dto.Room;
@@ -39,6 +40,7 @@ import qlks.ThemedTable;
  */
 public class QLKhachHang extends RoundedFrame {
     private int mouseX, mouseY;
+    int selectedCustomerId;
 
 
 
@@ -49,11 +51,36 @@ public class QLKhachHang extends RoundedFrame {
     public QLKhachHang() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
+        loadData.loadDataToTable(tKhachHang, "customers");
     }
-    
-   
+    public void resetCustomerFields(){
+                   if (tKhachHang != null) {
+        tKhachHang.clearSelection(); // Clears any selection in the table
+    }
+        selectedCustomerId=0;
+            txtName.setText("");
+    txtPhone.setText("");
+    txtMail.setText("");
+    txtAdress.setText("");
+    txtID.setText("");
+    }
+   public void loadKhachHangToFields() {
+       
+    int row = tKhachHang.getSelectedRow();
+    selectedCustomerId = Integer.parseInt(tKhachHang.getValueAt(row, 0).toString());
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một khách hàng.");
+        return;
+    }
+
+    // Lấy dữ liệu từ bảng (giả sử thứ tự cột: ID, Tên, SĐT, Email, Địa chỉ)
+    txtID.setText(tKhachHang.getValueAt(row, 0).toString());
+    txtName.setText(tKhachHang.getValueAt(row, 1).toString());
+    txtPhone.setText(tKhachHang.getValueAt(row, 2).toString());
+    txtMail.setText(tKhachHang.getValueAt(row, 3).toString());
+    txtAdress.setText(tKhachHang.getValueAt(row, 4).toString());
+}
+
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
@@ -61,8 +88,9 @@ public class QLKhachHang extends RoundedFrame {
         jOptionPane1 = new javax.swing.JOptionPane();
         btnThem3 = new RoundedButton();
         jPanel2 = new javax.swing.JPanel();
-        jLabel3 = new javax.swing.JLabel();
+        Return = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         close = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
@@ -72,7 +100,7 @@ public class QLKhachHang extends RoundedFrame {
         jLabel5 = new javax.swing.JLabel();
         btnLamMoi = new RoundedButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new ThemedTable();
+        tKhachHang = new ThemedTable();
         txtName = new javax.swing.JTextField();
         txtID = new javax.swing.JTextField();
         txtPhone = new javax.swing.JTextField();
@@ -120,11 +148,25 @@ public class QLKhachHang extends RoundedFrame {
         });
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
-        jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 250, 60));
+        Return.setBackground(new java.awt.Color(252, 244, 234));
+        Return.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        Return.setForeground(new java.awt.Color(0, 77, 79));
+        Return.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        Return.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/back.png"))); // NOI18N
+        Return.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Return.setOpaque(true);
+        Return.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ReturnMouseClicked(evt);
+            }
+        });
+        jPanel2.add(Return, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 60, 60));
 
         jLabel8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel8, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 0, 250, 60));
+
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
+        jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 250, 60));
 
         jLabel9.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 0, 250, 60));
@@ -179,9 +221,9 @@ public class QLKhachHang extends RoundedFrame {
                 btnLamMoiActionPerformed(evt);
             }
         });
-        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 360, 100, 40));
+        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 360, 110, 40));
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tKhachHang.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null, null, null},
                 {null, null, null, null, null, null},
@@ -192,9 +234,14 @@ public class QLKhachHang extends RoundedFrame {
                 "Mã KH", "Tên KH", "CCCD", "SĐT", "Địa chỉ", "Email"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        tKhachHang.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tKhachHangMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tKhachHang);
 
-        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 30, 440, 380));
+        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 20, 440, 390));
         jPanel3.add(txtName, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 60, 250, 40));
         jPanel3.add(txtID, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
         jPanel3.add(txtPhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
@@ -226,7 +273,7 @@ public class QLKhachHang extends RoundedFrame {
                 btnThemActionPerformed(evt);
             }
         });
-        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 360, 100, 40));
+        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 360, 100, 40));
 
         btnSua.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnSua.setForeground(new java.awt.Color(255, 255, 255));
@@ -237,7 +284,7 @@ public class QLKhachHang extends RoundedFrame {
                 btnSuaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 360, 100, 40));
+        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 360, 100, 40));
 
         btnXoa.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnXoa.setForeground(new java.awt.Color(255, 255, 255));
@@ -248,7 +295,7 @@ public class QLKhachHang extends RoundedFrame {
                 btnXoaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 360, 100, 40));
+        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 360, 100, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 950, 420));
 
@@ -279,6 +326,7 @@ this.dispose();
 
     private void btnLamMoiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLamMoiActionPerformed
         // TODO add your handling code here:
+resetCustomerFields();
     }//GEN-LAST:event_btnLamMoiActionPerformed
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
@@ -296,6 +344,19 @@ this.dispose();
     private void btnXoaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnXoaActionPerformed
+
+    private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked
+        // TODO add your handling code here:
+        HomePage home = new HomePage();
+         home.setSelectedTab(1);
+         home.setVisible(true);
+         this.dispose();
+    }//GEN-LAST:event_ReturnMouseClicked
+
+    private void tKhachHangMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tKhachHangMouseClicked
+        // TODO add your handling code here:
+        loadKhachHangToFields();
+    }//GEN-LAST:event_tKhachHangMouseClicked
 
     /**
      * @param args the command line arguments
@@ -460,6 +521,7 @@ this.dispose();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel Return;
     private javax.swing.JButton btnLamMoi;
     private javax.swing.JButton btnSua;
     private javax.swing.JButton btnThem;
@@ -482,7 +544,7 @@ this.dispose();
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
+    private javax.swing.JTable tKhachHang;
     private javax.swing.JTextField txtAdress;
     private javax.swing.JTextField txtID;
     private javax.swing.JTextField txtMail;

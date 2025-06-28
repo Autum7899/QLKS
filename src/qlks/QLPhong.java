@@ -7,6 +7,8 @@ package qlks;
 //import static btl_thlt_java.MuonTra.setupTableAppearance;
 import com.mysql.cj.result.Row;
 import dao.BookingDAO;
+import dao.loadData;
+import static dao.loadData.loadDataToTable;
 import dto.Booking;
 import dto.Customer;
 import dto.Room;
@@ -39,6 +41,7 @@ import qlks.ThemedTable;
  */
 public class QLPhong extends RoundedFrame {
     private int mouseX, mouseY;
+    int selectedRoomId;
 
 
 
@@ -49,10 +52,54 @@ public class QLPhong extends RoundedFrame {
     public QLPhong() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
+        loadData.loadDataToTable(tPhong, "rooms");
     }
-    
+    public void resetRoomFields(){
+                   if (tPhong != null) {
+        tPhong.clearSelection(); // Clears any selection in the table
+    }
+        selectedRoomId=0;
+    txtRoomNumber.setText("");
+    txtRoomType.setText("");
+    txtPrice.setText("");
+    txtDesc.setText("");
+    cmbStatus.setSelectedIndex(0);
+    }
+    public boolean validateRoomFields() {
+    if (txtRoomNumber.getText().trim().isEmpty() ||
+        txtRoomType.getText().trim().isEmpty() ||
+        txtPrice.getText().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(null, "Vui lòng điền đầy đủ thông tin phòng.");
+        return false;
+    }
+
+    try {
+        Double.parseDouble(txtPrice.getText().trim());
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(null, "Giá phòng không hợp lệ.");
+        return false;
+    }
+
+    return true;
+}
+    public void loadPhongToFields() {
+    int row = tPhong.getSelectedRow();
+    selectedRoomId = Integer.parseInt(tPhong.getValueAt(row, 0).toString());
+    if (row < 0) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một phòng.");
+        return;
+    }
+
+    // Giả định cột: 0=RoomId, 1=RoomNumber, 2=RoomType, 3=PricePerNight, 4=Description, 5=Status
+
+    txtRoomNumber.setText(tPhong.getValueAt(row, 1).toString());
+    txtRoomType.setText(tPhong.getValueAt(row, 2).toString());
+    txtPrice.setText(tPhong.getValueAt(row, 3).toString());
+    String status = tPhong.getValueAt(row, 4).toString();
+    txtDesc.setText(tPhong.getValueAt(row, 5).toString());
+    cmbStatus.setSelectedItem(status); // chọn đúng mục "Available" hoặc "Booked"
+}
+
    
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -61,6 +108,7 @@ public class QLPhong extends RoundedFrame {
         jOptionPane1 = new javax.swing.JOptionPane();
         btnThem3 = new RoundedButton();
         jPanel2 = new javax.swing.JPanel();
+        Return = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
@@ -72,12 +120,11 @@ public class QLPhong extends RoundedFrame {
         jLabel5 = new javax.swing.JLabel();
         btnLamMoi = new RoundedButton();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new ThemedTable();
-        txtName = new javax.swing.JTextField();
-        txtID = new javax.swing.JTextField();
-        txtPhone = new javax.swing.JTextField();
-        txtAdress = new javax.swing.JTextField();
-        txtMail = new javax.swing.JTextField();
+        tPhong = new ThemedTable();
+        txtRoomNumber = new javax.swing.JTextField();
+        txtRoomType = new javax.swing.JTextField();
+        txtPrice = new javax.swing.JTextField();
+        txtDesc = new javax.swing.JTextField();
         jLabel6 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
@@ -85,6 +132,7 @@ public class QLPhong extends RoundedFrame {
         btnThem = new RoundedButton();
         btnSua = new RoundedButton();
         btnXoa = new RoundedButton();
+        cmbStatus = new javax.swing.JComboBox<>();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -119,6 +167,20 @@ public class QLPhong extends RoundedFrame {
             }
         });
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        Return.setBackground(new java.awt.Color(252, 244, 234));
+        Return.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        Return.setForeground(new java.awt.Color(0, 77, 79));
+        Return.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        Return.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/back.png"))); // NOI18N
+        Return.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Return.setOpaque(true);
+        Return.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                ReturnMouseClicked(evt);
+            }
+        });
+        jPanel2.add(Return, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 60, 60));
 
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 250, 60));
@@ -179,9 +241,9 @@ public class QLPhong extends RoundedFrame {
                 btnLamMoiActionPerformed(evt);
             }
         });
-        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 360, 100, 40));
+        jPanel3.add(btnLamMoi, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 360, 110, 40));
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tPhong.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null, null, null},
                 {null, null, null, null, null, null},
@@ -192,14 +254,18 @@ public class QLPhong extends RoundedFrame {
                 "Mã phòng", "Số phòng", "Loại phòng", "Giá", "Trạng thái", "Mô tả"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        tPhong.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tPhongMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tPhong);
 
-        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 30, 440, 380));
-        jPanel3.add(txtName, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 60, 250, 40));
-        jPanel3.add(txtID, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
-        jPanel3.add(txtPhone, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
-        jPanel3.add(txtAdress, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 240, 250, 40));
-        jPanel3.add(txtMail, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 300, 250, 40));
+        jPanel3.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 20, 440, 390));
+        jPanel3.add(txtRoomNumber, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 60, 250, 40));
+        jPanel3.add(txtRoomType, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 120, 250, 40));
+        jPanel3.add(txtPrice, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 180, 250, 40));
+        jPanel3.add(txtDesc, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 300, 250, 40));
 
         jLabel6.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         jLabel6.setText("Mô tả");
@@ -226,7 +292,7 @@ public class QLPhong extends RoundedFrame {
                 btnThemActionPerformed(evt);
             }
         });
-        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 360, 100, 40));
+        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 360, 100, 40));
 
         btnSua.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnSua.setForeground(new java.awt.Color(255, 255, 255));
@@ -237,7 +303,7 @@ public class QLPhong extends RoundedFrame {
                 btnSuaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(150, 360, 100, 40));
+        jPanel3.add(btnSua, new org.netbeans.lib.awtextra.AbsoluteConstraints(140, 360, 100, 40));
 
         btnXoa.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnXoa.setForeground(new java.awt.Color(255, 255, 255));
@@ -248,7 +314,10 @@ public class QLPhong extends RoundedFrame {
                 btnXoaActionPerformed(evt);
             }
         });
-        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 360, 100, 40));
+        jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 360, 100, 40));
+
+        cmbStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Available", "Booked" }));
+        jPanel3.add(cmbStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 240, 250, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 950, 420));
 
@@ -279,6 +348,7 @@ this.dispose();
 
     private void btnLamMoiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLamMoiActionPerformed
         // TODO add your handling code here:
+    resetRoomFields();
     }//GEN-LAST:event_btnLamMoiActionPerformed
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
@@ -296,6 +366,19 @@ this.dispose();
     private void btnXoaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnXoaActionPerformed
+
+    private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked
+        // TODO add your handling code here:
+        HomePage home = new HomePage();
+         home.setSelectedTab(1);
+         home.setVisible(true);
+         this.dispose();
+    }//GEN-LAST:event_ReturnMouseClicked
+
+    private void tPhongMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tPhongMouseClicked
+        // TODO add your handling code here:
+        loadPhongToFields();
+    }//GEN-LAST:event_tPhongMouseClicked
 
     /**
      * @param args the command line arguments
@@ -844,12 +927,14 @@ this.dispose();
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel Return;
     private javax.swing.JButton btnLamMoi;
     private javax.swing.JButton btnSua;
     private javax.swing.JButton btnThem;
     private javax.swing.JButton btnThem3;
     private javax.swing.JButton btnXoa;
     private javax.swing.JLabel close;
+    private javax.swing.JComboBox<String> cmbStatus;
     private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -866,11 +951,10 @@ this.dispose();
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTable jTable1;
-    private javax.swing.JTextField txtAdress;
-    private javax.swing.JTextField txtID;
-    private javax.swing.JTextField txtMail;
-    private javax.swing.JTextField txtName;
-    private javax.swing.JTextField txtPhone;
+    private javax.swing.JTable tPhong;
+    private javax.swing.JTextField txtDesc;
+    private javax.swing.JTextField txtPrice;
+    private javax.swing.JTextField txtRoomNumber;
+    private javax.swing.JTextField txtRoomType;
     // End of variables declaration//GEN-END:variables
 }

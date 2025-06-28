@@ -6,6 +6,7 @@
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/dao/ServiceDAO.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/DatabaseConnection.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/dao/BookingDAO.java</file>
+            <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/QLPhong.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/PaymentForm.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/RoundedFrame.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/dao/RoomDAO.java</file>
@@ -21,11 +22,15 @@
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/ThemedTable.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/Icon/back.png</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/StatusCellRenderer.java</file>
+            <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/QLKhachHang.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/Login.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/dto/User.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/AddForm.java</file>
+            <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/QLNguoiDung.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/UserInfo.java</file>
+            <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/dao/loadData.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/QLHoaDon.java</file>
+            <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/QLDichVu.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/qlks/QLKS.java</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/Icon/HotelLogin.png</file>
             <file>file:/C:/Users/Admin/Desktop/PTUDW/QLKS/src/dto/Customer.java</file>

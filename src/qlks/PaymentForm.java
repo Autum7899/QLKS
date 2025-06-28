@@ -51,8 +51,6 @@ public class PaymentForm extends RoundedFrame {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
         paymentMethod = cmbPayment.getSelectedItem().toString();  
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
     }
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {

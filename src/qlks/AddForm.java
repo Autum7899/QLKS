@@ -53,8 +53,6 @@ public class AddForm extends RoundedFrame {
         initComponents();
         loadCustomers();
         loadRooms();
-//        if ("User".equals(UserInfo.loggedInRole)) {
-//    manageUsers.setVisible(false);
     }
     
    private void loadRooms() {

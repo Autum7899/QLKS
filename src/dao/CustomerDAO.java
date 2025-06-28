@@ -105,22 +105,6 @@ public class CustomerDAO {
      * @return Danh sách các booking của khách hàng đó.
      * @throws SQLException
      */
-    public List<Booking> getStayHistory(int customerId) throws SQLException {
-        List<Booking> history = new ArrayList<>();
-        // Sử dụng BookingDAO để lấy thông tin sẽ tốt hơn, nhưng để tiện cho bạn, ta có thể viết ở đây.
-        String sql = "SELECT * FROM bookings WHERE CustomerId = ? ORDER BY CheckInDate DESC";
-         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-             ps.setInt(1, customerId);
-             try (ResultSet rs = ps.executeQuery()) {
-                 while(rs.next()){
-                     // Giả sử có một lớp BookingDAO với helper `mapResultSetToBooking`
-                     // history.add(BookingDAO.mapResultSetToBooking(rs));
-                 }
-             }
-         }
-        return history;
-    }
 
     private Customer mapResultSetToCustomer(ResultSet rs) throws SQLException {
         Customer customer = new Customer();
