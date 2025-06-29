@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -32,6 +33,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.table.DefaultTableModel;
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextArea;
@@ -54,8 +59,9 @@ public class HomePage extends RoundedFrame {
         initComponents();
         if ("Staff".equals(UserInfo.loggedInRole)) {
     staff.setEnabled(false);
+    room.setEnabled(false);
         }     
-
+        loadAllInvoices();
         updateRoomButtonColors(this);
         loadDashboardToTextArea(textActivities);
         displayUsername.setText(UserInfo.loggedInUsername) ;
@@ -321,6 +327,174 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
         popup.show(button, 0, button.getHeight());
     });
 }
+public void loadAllInvoices() {
+    DefaultTableModel model = (DefaultTableModel) tHoaDon.getModel();
+    model.setRowCount(0); // Xoá dữ liệu cũ
+
+    String sql = "SELECT * FROM invoices ORDER BY PaymentDate DESC";
+    int invoiceCount = 0;
+    double totalRevenue = 0;
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            int invoiceId = rs.getInt("InvoiceId");
+            int bookingId = rs.getInt("BookingId");
+            int customerId = rs.getInt("CustomerId");
+            Date issueDate = rs.getDate("IssueDate");
+            double roomCharge = rs.getDouble("TotalRoomCharge");
+            double serviceCharge = rs.getDouble("TotalServiceCharge");
+            double total = rs.getDouble("GrandTotal");
+            String method = rs.getString("PaymentMethod");
+            Date paymentDate = rs.getDate("PaymentDate");
+            int userId = rs.getInt("IssuedByUserId");
+
+            model.addRow(new Object[]{
+                invoiceId, bookingId, customerId,
+                issueDate, roomCharge, serviceCharge,
+                total, method, paymentDate, userId
+            });
+
+            invoiceCount++;
+            totalRevenue += total;
+        }
+
+        lblTotalInvoices.setText("Số hóa đơn: " + invoiceCount);
+        lblGrandTotal.setText("Tổng doanh thu: " + String.format("%,.0f VND", totalRevenue));
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi tải hóa đơn: " + e.getMessage());
+    }
+}
+public void exportStatisticsToTextFile() {
+    DefaultTableModel model = (DefaultTableModel) tHoaDon.getModel();
+    if (model.getRowCount() == 0) {
+        JOptionPane.showMessageDialog(null, "Không có dữ liệu để xuất.");
+        return;
+    }
+
+    String desktopPath = System.getProperty("user.home") + "\\Desktop\\ThongKe";
+    File folder = new File(desktopPath);
+    if (!folder.exists()) {
+        folder.mkdirs();
+    }
+
+    String fileName = "ThongKeHoaDon_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) + ".txt";
+
+    File file = new File(folder, fileName);
+
+    try (PrintWriter writer = new PrintWriter(file)) {
+        writer.println("===== THỐNG KÊ HÓA ĐƠN =====");
+        writer.println("Ngày tạo: " + LocalDate.now());
+        writer.println("Tổng số hóa đơn: " + model.getRowCount());
+        writer.println();
+
+        double totalRevenue = 0;
+
+        for (int i = 0; i < model.getRowCount(); i++) {
+            int maHD = Integer.parseInt(model.getValueAt(i, 0).toString());
+            int bookingId = Integer.parseInt(model.getValueAt(i, 1).toString());
+            int customerId = Integer.parseInt(model.getValueAt(i, 2).toString());
+            String issueDate = model.getValueAt(i, 3).toString();
+            double roomCharge = Double.parseDouble(model.getValueAt(i, 4).toString());
+            double serviceCharge = Double.parseDouble(model.getValueAt(i, 5).toString());
+            double grandTotal = Double.parseDouble(model.getValueAt(i, 6).toString());
+            String method = model.getValueAt(i, 7).toString();
+            String paymentDate = model.getValueAt(i, 8).toString();
+            String userId = model.getValueAt(i, 9).toString();
+
+            // ➡️ DÒNG NGANG
+            writer.printf(
+                "#%d | KH: %d | Booking: %d | Ngày: %s | Phòng: %,.0f | DV: %,.0f | Tổng: %,.0f | TT: %s | NV: %s%n",
+                maHD, customerId, bookingId, issueDate, roomCharge, serviceCharge, grandTotal, paymentDate, userId
+            );
+
+            totalRevenue += grandTotal;
+        }
+
+        writer.println("\nTỔNG DOANH THU: " + String.format("%,.0f VND", totalRevenue));
+
+        JOptionPane.showMessageDialog(null, "Xuất thống kê thành công:\n" + file.getAbsolutePath());
+    } catch (IOException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi ghi file thống kê: " + e.getMessage());
+    }
+}
+public void filterInvoices() {
+    Date fromDate = jdcFrom.getDate();
+    Date toDate = jdcTo.getDate();
+    String selectedPayment = cmbPayment.getSelectedItem().toString();
+
+    DefaultTableModel model = (DefaultTableModel) tHoaDon.getModel();
+    model.setRowCount(0); // clear old data
+
+    StringBuilder sql = new StringBuilder("SELECT * FROM invoices WHERE 1=1");
+    List<Object> params = new ArrayList<>();
+
+    // Nếu có ngày bắt đầu
+    if (fromDate != null) {
+        sql.append(" AND PaymentDate >= ?");
+        params.add(new java.sql.Date(fromDate.getTime()));
+    }
+
+    // Nếu có ngày kết thúc
+    if (toDate != null) {
+        sql.append(" AND PaymentDate <= ?");
+        params.add(new java.sql.Date(toDate.getTime()));
+    }
+
+    // Nếu không phải là "Tất cả"
+    if (!selectedPayment.equals("Tất cả")) {
+        sql.append(" AND PaymentMethod = ?");
+        params.add(selectedPayment);
+    }
+
+    sql.append(" ORDER BY PaymentDate DESC");
+
+    int invoiceCount = 0;
+    double totalRevenue = 0;
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+        // Gán tham số động
+        for (int i = 0; i < params.size(); i++) {
+            ps.setObject(i + 1, params.get(i));
+        }
+
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) {
+            model.addRow(new Object[]{
+                rs.getInt("InvoiceId"),
+                rs.getInt("BookingId"),
+                rs.getInt("CustomerId"),
+                rs.getDate("IssueDate"),
+                rs.getDouble("TotalRoomCharge"),
+                rs.getDouble("TotalServiceCharge"),
+                rs.getDouble("GrandTotal"),
+                rs.getString("PaymentMethod"),
+                rs.getDate("PaymentDate"),
+                rs.getInt("IssuedByUserId")
+            });
+
+            invoiceCount++;
+            totalRevenue += rs.getDouble("GrandTotal");
+        }
+
+        lblTotalInvoices.setText("Số hóa đơn: " + invoiceCount);
+        lblGrandTotal.setText("Tổng doanh thu: " + String.format("%,.0f VND", totalRevenue));
+
+        if (invoiceCount == 0) {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy hóa đơn phù hợp.");
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi lọc: " + e.getMessage());
+    }
+}
+
+
 
 
 
@@ -391,9 +565,17 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
         jPanel10 = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new ThemedTable();
-        from = new com.toedter.calendar.JDateChooser();
-        to = new com.toedter.calendar.JDateChooser();
+        tHoaDon = new ThemedTable();
+        jdcFrom = new com.toedter.calendar.JDateChooser();
+        jdcTo = new com.toedter.calendar.JDateChooser();
+        lblGrandTotal = new javax.swing.JLabel();
+        btnExport = new RoundedButton();
+        lTotal1 = new javax.swing.JLabel();
+        lblTotalInvoices = new javax.swing.JLabel();
+        lTotal3 = new javax.swing.JLabel();
+        btnLoc1 = new RoundedButton();
+        cmbPayment = new javax.swing.JComboBox<>();
+        lTotal2 = new javax.swing.JLabel();
         jPanel11 = new javax.swing.JPanel();
 
         jMenuItem1.setText("jMenuItem1");
@@ -988,22 +1170,72 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
         jPanel5.setOpaque(false);
         jPanel5.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tHoaDon.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
+                "Mã hoá đơn ", "Mã đặt phòng ", "Mã khách hàng ", "Ngày lập", "Tiền phòng ", "Tiền dịch vụ ", "Tổng cộng ", "Phương thức TT", "Ngày TT", "Mã nhân viên"
             }
         ));
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane1.setViewportView(tHoaDon);
 
-        jPanel5.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 70, 970, 490));
-        jPanel5.add(from, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 40, -1, -1));
-        jPanel5.add(to, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 40, -1, -1));
+        jPanel5.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 120, 970, 450));
+        jPanel5.add(jdcFrom, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 50, 240, 40));
+        jPanel5.add(jdcTo, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 50, 230, 40));
+
+        lblGrandTotal.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblGrandTotal.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        lblGrandTotal.setText("Tổng doanh thu");
+        jPanel5.add(lblGrandTotal, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 570, 300, 40));
+
+        btnExport.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnExport.setForeground(new java.awt.Color(255, 255, 255));
+        btnExport.setText("Xuất");
+        btnExport.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnExport.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnExportActionPerformed(evt);
+            }
+        });
+        jPanel5.add(btnExport, new org.netbeans.lib.awtextra.AbsoluteConstraints(730, 50, 80, 40));
+
+        lTotal1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        lTotal1.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lTotal1.setText("Phương thức TT");
+        jPanel5.add(lTotal1, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 20, -1, 30));
+
+        lblTotalInvoices.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblTotalInvoices.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
+        lblTotalInvoices.setText("Số hóa đơn");
+        jPanel5.add(lblTotalInvoices, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 570, 200, 40));
+
+        lTotal3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        lTotal3.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lTotal3.setText("Từ ngày");
+        jPanel5.add(lTotal3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 20, -1, 30));
+
+        btnLoc1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnLoc1.setForeground(new java.awt.Color(255, 255, 255));
+        btnLoc1.setText("Lọc");
+        btnLoc1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnLoc1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLoc1ActionPerformed(evt);
+            }
+        });
+        jPanel5.add(btnLoc1, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 50, 80, 40));
+
+        cmbPayment.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tất cả", "Tiền mặt", "Chuyển khoản", "Thẻ tín dụng" }));
+        jPanel5.add(cmbPayment, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 50, 130, 40));
+
+        lTotal2.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        lTotal2.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lTotal2.setText("Đến ngày");
+        jPanel5.add(lTotal2, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 20, -1, 30));
 
         jPanel10.add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 10, 990, 620));
 
@@ -1245,6 +1477,16 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
 
     }//GEN-LAST:event_refreshMouseClicked
 
+    private void btnExportActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExportActionPerformed
+    exportStatisticsToTextFile();
+    loadAllInvoices();
+    }//GEN-LAST:event_btnExportActionPerformed
+
+    private void btnLoc1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoc1ActionPerformed
+        // TODO add your handling code here:
+        filterInvoices();
+    }//GEN-LAST:event_btnLoc1ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1289,10 +1531,12 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
     private javax.swing.JButton booking;
     private javax.swing.JButton btnAddBooking;
     private javax.swing.JButton btnAddCustomer;
+    private javax.swing.JButton btnExport;
+    private javax.swing.JButton btnLoc1;
     private javax.swing.JLabel close;
+    private javax.swing.JComboBox<String> cmbPayment;
     private javax.swing.JButton customer;
     private javax.swing.JLabel displayUsername;
-    private com.toedter.calendar.JDateChooser from;
     private javax.swing.JLabel homepage;
     private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel1;
@@ -1317,9 +1561,15 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField7;
+    private com.toedter.calendar.JDateChooser jdcFrom;
+    private com.toedter.calendar.JDateChooser jdcTo;
+    private javax.swing.JLabel lTotal1;
+    private javax.swing.JLabel lTotal2;
+    private javax.swing.JLabel lTotal3;
+    private javax.swing.JLabel lblGrandTotal;
+    private javax.swing.JLabel lblTotalInvoices;
     private javax.swing.JLabel manage;
     private javax.swing.JButton p101;
     private javax.swing.JButton p102;
@@ -1343,7 +1593,7 @@ private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
     private javax.swing.JLabel signout;
     private javax.swing.JButton staff;
     private javax.swing.JLabel statistic;
+    private javax.swing.JTable tHoaDon;
     private javax.swing.JTextPane textActivities;
-    private com.toedter.calendar.JDateChooser to;
     // End of variables declaration//GEN-END:variables
 }

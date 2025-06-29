@@ -326,7 +326,6 @@ public Integer getSelectedBookingIdFromComboBox(JComboBox<String> comboBox) {
         jScrollPane2.setViewportView(tInvoice);
 
         lTotal.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        lTotal.setForeground(new java.awt.Color(0, 77, 79));
         lTotal.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lTotal.setText("Total");
 
