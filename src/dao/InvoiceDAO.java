@@ -17,6 +17,7 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import qlks.UserInfo;
 
 /**
  * DAO cho thực thể Hóa đơn (Invoice).
@@ -32,6 +33,59 @@ public class InvoiceDAO {
      * @return ID của hóa đơn vừa tạo, hoặc -1 nếu thất bại.
      * @throws SQLException
      */
+public static void deleteSelectedBookedService(JTable tInvoice, int selectedBookingId, JLabel lTotal) {
+    int selectedRow = tInvoice.getSelectedRow();
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn một dịch vụ để xoá.");
+        return;
+    }
+
+    String serviceName = tInvoice.getValueAt(selectedRow, 0).toString();
+    int quantity = Integer.parseInt(tInvoice.getValueAt(selectedRow, 1).toString());
+    double price = Double.parseDouble(tInvoice.getValueAt(selectedRow, 2).toString());
+
+    String findIdSql = """
+        SELECT bs.BookedServiceId
+        FROM bookedservices bs
+        JOIN services s ON bs.ServiceId = s.ServiceId
+        WHERE s.ServiceName = ? AND bs.Quantity = ? AND bs.PriceAtBooking = ? AND bs.BookingId = ?
+        LIMIT 1
+    """;
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement psFind = conn.prepareStatement(findIdSql)) {
+
+        psFind.setString(1, serviceName);
+        psFind.setInt(2, quantity);
+        psFind.setDouble(3, price);
+        psFind.setInt(4, selectedBookingId);
+
+        ResultSet rs = psFind.executeQuery();
+        if (!rs.next()) {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy dịch vụ tương ứng để xoá.");
+            return;
+        }
+
+        int bookedServiceId = rs.getInt("BookedServiceId");
+
+        int confirm = JOptionPane.showConfirmDialog(null, "Bạn có chắc muốn xoá dịch vụ này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        String deleteSql = "DELETE FROM bookedservices WHERE BookedServiceId = ?";
+        try (PreparedStatement psDelete = conn.prepareStatement(deleteSql)) {
+            psDelete.setInt(1, bookedServiceId);
+            psDelete.executeUpdate();
+
+            JOptionPane.showMessageDialog(null, "Xoá dịch vụ thành công.");
+            showEstimateInvoice(UserInfo.selected, tInvoice, lTotal);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi xoá: " + e.getMessage());
+    }
+}
+
+
     public static void showEstimateInvoice(int bookingId, JTable tblEstimateDetails, JLabel lblEstimateTotal) {
     DefaultTableModel model = new DefaultTableModel();
     model.setColumnIdentifiers(new Object[]{"Dịch vụ", "Số lượng", "Đơn giá", "Thành tiền"});

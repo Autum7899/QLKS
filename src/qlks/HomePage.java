@@ -32,6 +32,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.table.DefaultTableModel;
 import java.lang.reflect.Field;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 
@@ -217,6 +219,109 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         JOptionPane.showMessageDialog(null, "Lỗi khi cập nhật trạng thái phòng: " + e.getMessage());
     }
 }
+public void handleRoomClick(String roomNumber, HomePage homepage) {
+    String status = "";
+    String type = "";
+    double price = 0;
+    String description = "";
+
+    try (Connection conn = DatabaseConnection.getConnection()) {
+        String sql = "SELECT * FROM rooms WHERE RoomNumber = ?";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setString(1, roomNumber);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            status = rs.getString("Status");
+            type = rs.getString("RoomType");
+            price = rs.getDouble("PricePerNight");
+            description = rs.getString("RoomDescription");
+        } else {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy thông tin phòng.");
+            return;
+        }
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi truy vấn: " + e.getMessage());
+        return;
+    }
+
+    // 📝 Tạo thông tin hiển thị
+    StringBuilder info = new StringBuilder();
+    info.append("📌 Thông tin phòng: \n")
+        .append("- Số phòng: ").append(roomNumber).append("\n")
+        .append("- Loại phòng: ").append(type).append("\n")
+        .append("- Giá mỗi đêm: ").append(String.format("%,.0f VND", price)).append("\n")
+        .append("- Trạng thái: ").append(status).append("\n")
+        .append("- Mô tả: ").append(description == null ? "Không có" : description).append("\n\n");
+
+    switch (status.toLowerCase()) {
+        case "booked" -> {
+            int confirm = JOptionPane.showConfirmDialog(null,
+                    info + "Phòng đang được đặt.\nBạn có muốn trả phòng không?",
+                    "Thông tin phòng " + roomNumber, JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                QLHoaDon hd = new QLHoaDon();
+            hd.setVisible(true);
+            this.dispose();// ✅ Gọi trang thanh toán
+            }
+        }
+
+        case "available" -> {
+            int confirm = JOptionPane.showConfirmDialog(null,
+                    info + "Phòng đang trống.\nBạn có muốn đặt phòng không?",
+                    "Thông tin phòng " + roomNumber, JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                
+AddForm form = new AddForm();
+                form.setVisible(true); // ✅ Gọi trang đặt phòng
+            }
+        }
+
+        default -> {
+            JOptionPane.showMessageDialog(null, info.toString(), "Thông tin phòng", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+}
+private void setupRoomMenu(JButton button, String roomType, HomePage homepage) {
+    button.addActionListener(e -> {
+        JPopupMenu popup = new JPopupMenu();
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            String sql = "SELECT RoomNumber, Status, PricePerNight FROM rooms WHERE RoomType = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, roomType);
+            ResultSet rs = ps.executeQuery();
+
+            boolean found = false;
+            while (rs.next()) {
+                String roomNumber = rs.getString("RoomNumber");
+                String status = rs.getString("Status");
+                double price = rs.getDouble("PricePerNight");
+
+                String label = String.format("Phòng %s - %,d VND [%s]", roomNumber, (int) price, status);
+
+                JMenuItem item = new JMenuItem(label);
+                item.addActionListener(ev -> handleRoomClick(roomNumber, homepage));
+                popup.add(item);
+                found = true;
+            }
+
+            if (!found) {
+                JMenuItem item = new JMenuItem("Không có phòng nào.");
+                item.setEnabled(false);
+                popup.add(item);
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        popup.show(button, 0, button.getHeight());
+    });
+}
+
 
 
 
@@ -246,7 +351,7 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         jLabel7 = new javax.swing.JLabel();
         pnlRoomLayout = new javax.swing.JPanel();
         p502 = new javax.swing.JButton();
-        suite = new javax.swing.JButton();
+        Standard = new javax.swing.JButton();
         p501 = new javax.swing.JButton();
         p401 = new javax.swing.JButton();
         p402 = new javax.swing.JButton();
@@ -265,8 +370,8 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         jTextField4 = new javax.swing.JTextField();
         jLabel11 = new javax.swing.JLabel();
         p503 = new javax.swing.JButton();
-        suite1 = new javax.swing.JButton();
-        suite2 = new javax.swing.JButton();
+        Suite = new javax.swing.JButton();
+        Deluxe = new javax.swing.JButton();
         jTextField7 = new javax.swing.JTextField();
         refresh = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
@@ -284,6 +389,11 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         room = new qlks.RoundedButton();
         customer = new qlks.RoundedButton();
         jPanel10 = new javax.swing.JPanel();
+        jPanel5 = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTable1 = new ThemedTable();
+        from = new com.toedter.calendar.JDateChooser();
+        to = new com.toedter.calendar.JDateChooser();
         jPanel11 = new javax.swing.JPanel();
 
         jMenuItem1.setText("jMenuItem1");
@@ -465,20 +575,20 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         });
         pnlRoomLayout.add(p502, new org.netbeans.lib.awtextra.AbsoluteConstraints(120, 20, 100, -1));
 
-        suite.setBackground(new java.awt.Color(9, 38, 41));
-        suite.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        suite.setForeground(new java.awt.Color(255, 255, 255));
-        suite.setText("Standard");
-        suite.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        suite.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        suite.setPreferredSize(new java.awt.Dimension(200, 100));
-        suite.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        suite.addActionListener(new java.awt.event.ActionListener() {
+        Standard.setBackground(new java.awt.Color(9, 38, 41));
+        Standard.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        Standard.setForeground(new java.awt.Color(255, 255, 255));
+        Standard.setText("Standard");
+        Standard.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Standard.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        Standard.setPreferredSize(new java.awt.Dimension(200, 100));
+        Standard.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        Standard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                suiteActionPerformed(evt);
+                StandardActionPerformed(evt);
             }
         });
-        pnlRoomLayout.add(suite, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 350, 90, 210));
+        pnlRoomLayout.add(Standard, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 350, 90, 210));
 
         p501.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         p501.setText("501");
@@ -678,35 +788,35 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         });
         pnlRoomLayout.add(p503, new org.netbeans.lib.awtextra.AbsoluteConstraints(230, 20, 100, -1));
 
-        suite1.setBackground(new java.awt.Color(9, 38, 41));
-        suite1.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        suite1.setForeground(new java.awt.Color(255, 255, 255));
-        suite1.setText("Suite");
-        suite1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        suite1.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        suite1.setPreferredSize(new java.awt.Dimension(200, 100));
-        suite1.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        suite1.addActionListener(new java.awt.event.ActionListener() {
+        Suite.setBackground(new java.awt.Color(9, 38, 41));
+        Suite.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        Suite.setForeground(new java.awt.Color(255, 255, 255));
+        Suite.setText("Suite");
+        Suite.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Suite.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        Suite.setPreferredSize(new java.awt.Dimension(200, 100));
+        Suite.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        Suite.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                suite1ActionPerformed(evt);
+                SuiteActionPerformed(evt);
             }
         });
-        pnlRoomLayout.add(suite1, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 20, 90, 100));
+        pnlRoomLayout.add(Suite, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 20, 90, 100));
 
-        suite2.setBackground(new java.awt.Color(9, 38, 41));
-        suite2.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
-        suite2.setForeground(new java.awt.Color(255, 255, 255));
-        suite2.setText("Deluxe");
-        suite2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        suite2.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
-        suite2.setPreferredSize(new java.awt.Dimension(200, 100));
-        suite2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        suite2.addActionListener(new java.awt.event.ActionListener() {
+        Deluxe.setBackground(new java.awt.Color(9, 38, 41));
+        Deluxe.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
+        Deluxe.setForeground(new java.awt.Color(255, 255, 255));
+        Deluxe.setText("Deluxe");
+        Deluxe.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        Deluxe.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        Deluxe.setPreferredSize(new java.awt.Dimension(200, 100));
+        Deluxe.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        Deluxe.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                suite2ActionPerformed(evt);
+                DeluxeActionPerformed(evt);
             }
         });
-        pnlRoomLayout.add(suite2, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 130, 90, 210));
+        pnlRoomLayout.add(Deluxe, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 130, 90, 210));
 
         jTextField7.setEditable(false);
         jTextField7.setBackground(new java.awt.Color(239, 68, 68));
@@ -871,17 +981,31 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
         jTabbedPane1.addTab("tab2", jPanel9);
 
         jPanel10.setBackground(new java.awt.Color(252, 244, 234));
+        jPanel10.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
-        jPanel10.setLayout(jPanel10Layout);
-        jPanel10Layout.setHorizontalGroup(
-            jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1020, Short.MAX_VALUE)
-        );
-        jPanel10Layout.setVerticalGroup(
-            jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 645, Short.MAX_VALUE)
-        );
+        jPanel5.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel5.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Thống kê hóa đơn", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
+        jPanel5.setOpaque(false);
+        jPanel5.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane1.setViewportView(jTable1);
+
+        jPanel5.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 70, 970, 490));
+        jPanel5.add(from, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 40, -1, -1));
+        jPanel5.add(to, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 40, -1, -1));
+
+        jPanel10.add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 10, 990, 620));
 
         jTabbedPane1.addTab("tab3", jPanel10);
 
@@ -1005,75 +1129,93 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
 
     private void p502ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p502ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("502", this);
     }//GEN-LAST:event_p502ActionPerformed
 
-    private void suiteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_suiteActionPerformed
+    private void StandardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StandardActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_suiteActionPerformed
+        setupRoomMenu(Standard, "Standard", this);
+    }//GEN-LAST:event_StandardActionPerformed
 
     private void p403ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p403ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("403", this);
     }//GEN-LAST:event_p403ActionPerformed
 
     private void p402ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p402ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("402", this);
     }//GEN-LAST:event_p402ActionPerformed
 
     private void p401ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p401ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("401", this);
     }//GEN-LAST:event_p401ActionPerformed
 
     private void p303ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p303ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("303", this);
     }//GEN-LAST:event_p303ActionPerformed
 
     private void p302ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p302ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("302", this);
     }//GEN-LAST:event_p302ActionPerformed
 
     private void p301ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p301ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("301", this);
     }//GEN-LAST:event_p301ActionPerformed
 
     private void p203ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p203ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("203", this);
     }//GEN-LAST:event_p203ActionPerformed
 
     private void p202ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p202ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("202", this);
     }//GEN-LAST:event_p202ActionPerformed
 
     private void p201ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p201ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("201", this);
     }//GEN-LAST:event_p201ActionPerformed
 
     private void p103ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p103ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("103", this);
     }//GEN-LAST:event_p103ActionPerformed
 
     private void p102ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p102ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("102", this);
     }//GEN-LAST:event_p102ActionPerformed
 
     private void p101ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p101ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("101", this);
     }//GEN-LAST:event_p101ActionPerformed
 
     private void p501ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p501ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("501", this);
     }//GEN-LAST:event_p501ActionPerformed
 
     private void p503ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p503ActionPerformed
         // TODO add your handling code here:
+        handleRoomClick("503", this);
     }//GEN-LAST:event_p503ActionPerformed
 
-    private void suite1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_suite1ActionPerformed
+    private void SuiteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SuiteActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_suite1ActionPerformed
+        setupRoomMenu(Suite, "Suite", this);
+    }//GEN-LAST:event_SuiteActionPerformed
 
-    private void suite2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_suite2ActionPerformed
+    private void DeluxeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeluxeActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_suite2ActionPerformed
+        setupRoomMenu(Deluxe, "Deluxe", this);
+    }//GEN-LAST:event_DeluxeActionPerformed
 
     private void jTextField7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField7ActionPerformed
         // TODO add your handling code here:
@@ -1085,6 +1227,8 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
 
     private void btnAddCustomerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddCustomerActionPerformed
         // TODO add your handling code here:
+        AddKhachHang form = new AddKhachHang();
+        form.setVisible(true);
 
     }//GEN-LAST:event_btnAddCustomerActionPerformed
 
@@ -1137,7 +1281,10 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton Deluxe;
     private javax.swing.JLabel Logo;
+    private javax.swing.JButton Standard;
+    private javax.swing.JButton Suite;
     private javax.swing.JButton billing;
     private javax.swing.JButton booking;
     private javax.swing.JButton btnAddBooking;
@@ -1145,6 +1292,7 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
     private javax.swing.JLabel close;
     private javax.swing.JButton customer;
     private javax.swing.JLabel displayUsername;
+    private com.toedter.calendar.JDateChooser from;
     private javax.swing.JLabel homepage;
     private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel1;
@@ -1163,10 +1311,13 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
+    private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField7;
     private javax.swing.JLabel manage;
@@ -1192,9 +1343,7 @@ try (PreparedStatement stmt = conn.prepareStatement(sqlTodayCheckOut);
     private javax.swing.JLabel signout;
     private javax.swing.JButton staff;
     private javax.swing.JLabel statistic;
-    private javax.swing.JButton suite;
-    private javax.swing.JButton suite1;
-    private javax.swing.JButton suite2;
     private javax.swing.JTextPane textActivities;
+    private com.toedter.calendar.JDateChooser to;
     // End of variables declaration//GEN-END:variables
 }

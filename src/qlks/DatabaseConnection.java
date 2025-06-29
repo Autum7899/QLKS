@@ -13,7 +13,7 @@ public class DatabaseConnection {
     // Chi tiết kết nối CSDL.
     private static final String DB_URL = "jdbc:mysql://localhost:3306/qlks";
     private static final String USER = "root";
-    private static final String PASSWORD = "moly7899"; // Mật khẩu của bạn
+    private static final String PASSWORD = "moly7899"; 
 
     /**
      * Thiết lập và trả về một kết nối đến cơ sở dữ liệu.

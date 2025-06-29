@@ -59,6 +59,105 @@ public class QLDichVu extends RoundedFrame {
         txtPrice.setText("");
         txtDesc.setText("");
     }
+    public void addService() {
+    String name = txtName.getText();
+    String priceText = txtPrice.getText();
+    String desc = txtDesc.getText();
+
+    // Kiểm tra giá trị số
+    double price;
+    try {
+        price = Double.parseDouble(priceText);
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Giá dịch vụ phải là số hợp lệ");
+        return;
+    }
+
+    // Kiểm tra trùng tên dịch vụ
+    String checkSql = "SELECT * FROM services WHERE ServiceName = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+        checkStmt.setString(1, name);
+        ResultSet rs = checkStmt.executeQuery();
+        if (rs.next()) {
+            JOptionPane.showMessageDialog(this, "Dịch vụ đã tồn tại.");
+            return;
+        }
+
+        // Thêm dịch vụ
+        String insertSql = "INSERT INTO services (ServiceName, Price, Description) VALUES (?, ?, ?)";
+        try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            insertStmt.setString(1, name);
+            insertStmt.setDouble(2, price);
+            insertStmt.setString(3, desc);
+
+            insertStmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Thêm dịch vụ thành công.");
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi thêm dịch vụ: " + e.getMessage());
+    }
+}
+public void updateService(int selectedServiceId) {
+    String name = txtName.getText();
+    String priceText = txtPrice.getText();
+    String desc = txtDesc.getText();
+
+    double price;
+    try {
+        price = Double.parseDouble(priceText);
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Giá dịch vụ phải là số hợp lệ");
+        return;
+    }
+
+    String updateSql = "UPDATE services SET ServiceName = ?, Price = ?, Description = ? WHERE ServiceId = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(updateSql)) {
+
+        ps.setString(1, name);
+        ps.setDouble(2, price);
+        ps.setString(3, desc);
+        ps.setInt(4, selectedServiceId);
+
+        ps.executeUpdate();
+        JOptionPane.showMessageDialog(this, "Cập nhật dịch vụ thành công.");
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật: " + e.getMessage());
+    }
+}
+public void deleteService(int selectedServiceId) {
+    // Kiểm tra xem có dịch vụ đang được đặt hay không
+    String checkSql = "SELECT * FROM bookedservices WHERE ServiceId = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+        checkStmt.setInt(1, selectedServiceId);
+        ResultSet rs = checkStmt.executeQuery();
+
+        if (rs.next()) {
+            JOptionPane.showMessageDialog(this, "Không thể xoá dịch vụ đã được đặt.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xoá dịch vụ này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        String deleteSql = "DELETE FROM services WHERE ServiceId = ?";
+        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+            deleteStmt.setInt(1, selectedServiceId);
+            deleteStmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Đã xoá dịch vụ.");
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi xoá: " + e.getMessage());
+    }
+}
+
    public void loadDichVuToFields(){
     int row = tDichVu.getSelectedRow();
     selectedServiceId = Integer.parseInt(tDichVu.getValueAt(row, 0).toString());
@@ -310,10 +409,14 @@ this.dispose();
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
         // TODO add your handling code here:
+        addService();
+        loadData.loadDataToTable(tDichVu, "services");
     }//GEN-LAST:event_btnThemActionPerformed
 
     private void btnSuaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSuaActionPerformed
         // TODO add your handling code here:
+        updateService(selectedServiceId);
+        loadData.loadDataToTable(tDichVu, "services");
     }//GEN-LAST:event_btnSuaActionPerformed
 
     private void btnThem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThem3ActionPerformed
@@ -322,6 +425,8 @@ this.dispose();
 
     private void btnXoaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaActionPerformed
         // TODO add your handling code here:
+        deleteService(selectedServiceId);
+        loadData.loadDataToTable(tDichVu, "services");
     }//GEN-LAST:event_btnXoaActionPerformed
 
     private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked

@@ -24,6 +24,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,30 @@ public class AddForm extends RoundedFrame {
         loadCustomers();
         loadRooms();
     }
-    
+    public boolean validateBookingDates() {
+    Date checkIn = jdcCheckIn.getDate();
+    Date checkOut = jdcCheckOut.getDate();
+
+    if (checkIn == null || checkOut == null) {
+        JOptionPane.showMessageDialog(null, "Vui lòng chọn đầy đủ ngày nhận và trả phòng.");
+        return false;
+    }
+
+    Date today = new Date();
+
+    if (checkIn.before(today)) {
+        JOptionPane.showMessageDialog(null, "Ngày nhận phòng không được ở quá khứ.");
+        return false;
+    }
+
+    if (checkOut.before(checkIn)) {
+        JOptionPane.showMessageDialog(null, "Ngày trả phòng phải sau ngày nhận phòng.");
+        return false;
+    }
+
+    return true; // Hợp lệ
+}
+
    private void loadRooms() {
     cmbRoom.removeAllItems();
     roomMap.clear();
@@ -311,6 +335,9 @@ this.dispose();
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
         // TODO add your handling code here:
+        if (!validateBookingDates()) {
+    return; // Dừng thao tác đặt phòng
+}
         add();
         
     }//GEN-LAST:event_btnThemActionPerformed

@@ -8,7 +8,6 @@ package qlks;
 import com.mysql.cj.result.Row;
 import dao.BookingDAO;
 import dao.InvoiceDAO;
-import static dao.ServiceDAO.deleteSelectedBookedService;
 import dto.Booking;
 import java.awt.Color;
 import java.io.BufferedWriter;
@@ -477,7 +476,7 @@ themDichVuChoBooking();
 
     private void btnDeleteMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_btnDeleteMouseClicked
         // TODO add your handling code here:
-        deleteSelectedBookedService(tInvoice, UserInfo.selected,lTotal);
+        InvoiceDAO.deleteSelectedBookedService(tInvoice, UserInfo.selected,lTotal);
     }//GEN-LAST:event_btnDeleteMouseClicked
 
     private void jPanel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel4MouseClicked

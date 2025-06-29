@@ -54,11 +54,108 @@ public class QLNguoiDung extends RoundedFrame {
         initComponents();
         loadData.loadDataToTable(tNguoiDung, "users");
     }
+    public void addUser() {
+    String username = txtUsername.getText();
+    String password = txtPassword.getText();
+    String name = txtName.getText();
+    String email = txtMail.getText();
+    String phone = txtSDT.getText();
+    String role = cmbRole.getSelectedItem().toString();
+
+    String sql = "INSERT INTO users (Username, PasswordHash, FullName, Email, PhoneNumber, Role) VALUES (?, ?, ?, ?, ?, ?)";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        ps.setString(1, username);
+        ps.setString(2, password); // nếu bạn mã hóa, xử lý trước tại đây
+        ps.setString(3, name);
+        ps.setString(4, email);
+        ps.setString(5, phone);
+        ps.setString(6, role);
+
+        ps.executeUpdate();
+        JOptionPane.showMessageDialog(this, "Đã thêm người dùng thành công");
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi: " + e.getMessage());
+    }
+}
+
+    public void updateUser(int userId) {
+    String username = txtUsername.getText();
+    String password = txtPassword.getText();
+    String name = txtName.getText();
+    String email = txtMail.getText();
+    String phone = txtSDT.getText();
+    String role = cmbRole.getSelectedItem().toString();
+
+    String sql = "UPDATE users SET Username=?, PasswordHash=?, FullName=?, Email=?, PhoneNumber=?, Role=? WHERE UserId=?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        ps.setString(1, username);
+        ps.setString(2, password);
+        ps.setString(3, name);
+        ps.setString(4, email);
+        ps.setString(5, phone);
+        ps.setString(6, role);
+        ps.setInt(7, userId);
+
+        ps.executeUpdate();
+        JOptionPane.showMessageDialog(this, "Cập nhật thành công");
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi: " + e.getMessage());
+    }
+}
+
+public void deleteUser(int userId) {
+    // Lấy username theo userId
+    String sqlGetUsername = "SELECT Username FROM users WHERE UserId = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sqlGetUsername)) {
+
+        ps.setInt(1, userId);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            String usernameToDelete = rs.getString("Username");
+
+            if (usernameToDelete.equals(UserInfo.loggedInUsername)) {
+                JOptionPane.showMessageDialog(this, "Bạn không thể xoá chính tài khoản của mình!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi kiểm tra người dùng: " + e.getMessage());
+        return;
+    }
+
+    // Xác nhận xoá
+    int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xoá người dùng này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+    if (confirm != JOptionPane.YES_OPTION) return;
+
+    // Xoá
+    String sqlDelete = "DELETE FROM users WHERE UserId = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sqlDelete)) {
+
+        ps.setInt(1, userId);
+        ps.executeUpdate();
+        JOptionPane.showMessageDialog(this, "Đã xoá người dùng.");
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi xoá người dùng: " + e.getMessage());
+    }
+}
+
+
     public void resetUserFields(){
                    if (tNguoiDung != null) {
         tNguoiDung.clearSelection(); // Clears any selection in the table
     }
-        selectedUserId=0;
+    selectedUserId=0;
     txtUsername.setText("");
     txtPassword.setText("");
     txtMail.setText("");
@@ -336,10 +433,14 @@ resetUserFields();
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
         // TODO add your handling code here:
+        addUser();
+        loadData.loadDataToTable(tNguoiDung, "users");
     }//GEN-LAST:event_btnThemActionPerformed
 
     private void btnSuaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSuaActionPerformed
         // TODO add your handling code here:
+        updateUser(selectedUserId);
+        loadData.loadDataToTable(tNguoiDung, "users");
     }//GEN-LAST:event_btnSuaActionPerformed
 
     private void btnThem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThem3ActionPerformed
@@ -348,6 +449,8 @@ resetUserFields();
 
     private void btnXoaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaActionPerformed
         // TODO add your handling code here:
+        deleteUser(selectedUserId);
+        loadData.loadDataToTable(tNguoiDung, "users");
     }//GEN-LAST:event_btnXoaActionPerformed
 
     private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed

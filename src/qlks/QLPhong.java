@@ -58,30 +58,141 @@ public class QLPhong extends RoundedFrame {
                    if (tPhong != null) {
         tPhong.clearSelection(); // Clears any selection in the table
     }
-        selectedRoomId=0;
+    selectedRoomId=0;
     txtRoomNumber.setText("");
     txtRoomType.setText("");
     txtPrice.setText("");
     txtDesc.setText("");
     cmbStatus.setSelectedIndex(0);
     }
-    public boolean validateRoomFields() {
-    if (txtRoomNumber.getText().trim().isEmpty() ||
-        txtRoomType.getText().trim().isEmpty() ||
-        txtPrice.getText().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(null, "Vui lòng điền đầy đủ thông tin phòng.");
-        return false;
-    }
+    public void updateRoom(int selectedRoomId) {
+    String roomNumber = txtRoomNumber.getText();
+    String roomType = txtRoomType.getText();
+    String priceText = txtPrice.getText();
+    String description = txtDesc.getText();
+    String status = cmbStatus.getSelectedItem().toString();
 
+    // Kiểm tra giá trị số
+    double price;
     try {
-        Double.parseDouble(txtPrice.getText().trim());
+        price = Double.parseDouble(priceText);
     } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(null, "Giá phòng không hợp lệ.");
-        return false;
+        JOptionPane.showMessageDialog(this, "Giá phải là số hợp lệ");
+        return;
     }
 
-    return true;
+    // Kiểm tra trạng thái hiện tại trong CSDL
+    String checkSql = "SELECT Status FROM rooms WHERE RoomId = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+        checkStmt.setInt(1, selectedRoomId);
+        ResultSet rs = checkStmt.executeQuery();
+
+        if (rs.next()) {
+            String currentStatus = rs.getString("Status");
+            if ("Booked".equalsIgnoreCase(currentStatus)) {
+                JOptionPane.showMessageDialog(this, "Không thể sửa phòng đang được đặt (Booked).");
+                return;
+            }
+        }
+
+        String updateSql = "UPDATE rooms SET RoomNumber = ?, RoomType = ?, PricePerNight = ?, RoomDescription = ?, Status = ? WHERE RoomId = ?";
+        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+            updateStmt.setString(1, roomNumber);
+            updateStmt.setString(2, roomType);
+            updateStmt.setDouble(3, price);
+            updateStmt.setString(4, description);
+            updateStmt.setString(5, status);
+            updateStmt.setInt(6, selectedRoomId);
+
+            updateStmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Cập nhật phòng thành công.");
+        }
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi cập nhật phòng: " + e.getMessage());
+    }
 }
+public void deleteRoom(int selectedRoomId) {
+    // Kiểm tra trạng thái phòng trước khi xoá
+    String checkSql = "SELECT Status FROM rooms WHERE RoomId = ?";
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+        checkStmt.setInt(1, selectedRoomId);
+        ResultSet rs = checkStmt.executeQuery();
+
+        if (rs.next()) {
+            String currentStatus = rs.getString("Status");
+            if ("Booked".equalsIgnoreCase(currentStatus)) {
+                JOptionPane.showMessageDialog(this, "Không thể xoá phòng đang được đặt (Booked).");
+                return;
+            }
+        }
+
+        // Xác nhận xoá
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xoá phòng này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        String deleteSql = "DELETE FROM rooms WHERE RoomId = ?";
+        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+            deleteStmt.setInt(1, selectedRoomId);
+            deleteStmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Đã xoá phòng.");
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi xoá phòng: " + e.getMessage());
+    }
+}
+public void addRoom() {
+    String roomNumber = txtRoomNumber.getText();
+    String roomType = txtRoomType.getText();
+    String priceText = txtPrice.getText();
+    String description = txtDesc.getText();
+    String status = cmbStatus.getSelectedItem().toString();
+
+    // Kiểm tra giá trị số
+    double price;
+    try {
+        price = Double.parseDouble(priceText);
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Giá phải là số hợp lệ");
+        return;
+    }
+
+    // Kiểm tra trùng mã phòng
+    String checkSql = "SELECT * FROM rooms WHERE RoomNumber = ?";
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+        checkStmt.setString(1, roomNumber);
+        ResultSet rs = checkStmt.executeQuery();
+        if (rs.next()) {
+            JOptionPane.showMessageDialog(this, "Số phòng đã tồn tại.");
+            return;
+        }
+
+        // Thêm phòng
+        String insertSql = "INSERT INTO rooms (RoomNumber, RoomType, PricePerNight, RoomDescription, Status) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+            insertStmt.setString(1, roomNumber);
+            insertStmt.setString(2, roomType);
+            insertStmt.setDouble(3, price);
+            insertStmt.setString(4, description);
+            insertStmt.setString(5, status);
+
+            insertStmt.executeUpdate();
+            JOptionPane.showMessageDialog(this, "Thêm phòng thành công.");
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Lỗi khi thêm phòng: " + e.getMessage());
+    }
+}
+
     public void loadPhongToFields() {
     int row = tPhong.getSelectedRow();
     selectedRoomId = Integer.parseInt(tPhong.getValueAt(row, 0).toString());
@@ -98,6 +209,47 @@ public class QLPhong extends RoundedFrame {
     String status = tPhong.getValueAt(row, 4).toString();
     txtDesc.setText(tPhong.getValueAt(row, 5).toString());
     cmbStatus.setSelectedItem(status); // chọn đúng mục "Available" hoặc "Booked"
+}
+public void searchRoomByNumber(String keyword) {
+    DefaultTableModel model = (DefaultTableModel) tPhong.getModel();
+    model.setRowCount(0); // Xoá dữ liệu cũ
+
+    String sql;
+    boolean hasKeyword = !keyword.trim().isEmpty();
+
+    if (hasKeyword) {
+        sql = "SELECT * FROM rooms WHERE RoomNumber LIKE ?";
+    } else {
+        sql = "SELECT * FROM rooms"; // Nếu để trống, load tất cả phòng
+    }
+
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        if (hasKeyword) {
+            ps.setString(1, "%" + keyword + "%");
+        }
+
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            int id = rs.getInt("RoomId");
+            String number = rs.getString("RoomNumber");
+            String type = rs.getString("RoomType");
+            double price = rs.getDouble("PricePerNight");
+            String status = rs.getString("Status");
+            String desc = rs.getString("RoomDescription");
+
+            model.addRow(new Object[]{id, number, type, price, status, desc});
+        }
+
+        if (model.getRowCount() == 0) {
+            JOptionPane.showMessageDialog(null, "Không tìm thấy phòng.");
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(null, "Lỗi khi tìm phòng: " + e.getMessage());
+    }
 }
 
    
@@ -133,6 +285,7 @@ public class QLPhong extends RoundedFrame {
         btnSua = new RoundedButton();
         btnXoa = new RoundedButton();
         cmbStatus = new javax.swing.JComboBox<>();
+        search = new javax.swing.JLabel();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -316,8 +469,18 @@ public class QLPhong extends RoundedFrame {
         });
         jPanel3.add(btnXoa, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 360, 100, 40));
 
-        cmbStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Available", "Booked" }));
+        cmbStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Available", "Booked", "Under Maintenance" }));
         jPanel3.add(cmbStatus, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 240, 250, 40));
+
+        search.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        search.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/magnifying-glass.png"))); // NOI18N
+        search.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        search.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                searchMouseClicked(evt);
+            }
+        });
+        jPanel3.add(search, new org.netbeans.lib.awtextra.AbsoluteConstraints(452, 60, 40, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 950, 420));
 
@@ -353,10 +516,14 @@ this.dispose();
 
     private void btnThemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThemActionPerformed
         // TODO add your handling code here:
+        addRoom();
+        loadData.loadDataToTable(tPhong, "rooms");
     }//GEN-LAST:event_btnThemActionPerformed
 
     private void btnSuaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSuaActionPerformed
         // TODO add your handling code here:
+        updateRoom(selectedRoomId);
+        loadData.loadDataToTable(tPhong, "rooms");
     }//GEN-LAST:event_btnSuaActionPerformed
 
     private void btnThem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnThem3ActionPerformed
@@ -365,6 +532,8 @@ this.dispose();
 
     private void btnXoaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnXoaActionPerformed
         // TODO add your handling code here:
+        deleteRoom(selectedRoomId);
+        loadData.loadDataToTable(tPhong, "rooms");
     }//GEN-LAST:event_btnXoaActionPerformed
 
     private void ReturnMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ReturnMouseClicked
@@ -379,6 +548,12 @@ this.dispose();
         // TODO add your handling code here:
         loadPhongToFields();
     }//GEN-LAST:event_tPhongMouseClicked
+
+    private void searchMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_searchMouseClicked
+        // TODO add your handling code here:
+        String roomNumber = txtRoomNumber.getText().trim();
+        searchRoomByNumber(roomNumber);
+    }//GEN-LAST:event_searchMouseClicked
 
     /**
      * @param args the command line arguments
@@ -951,6 +1126,7 @@ this.dispose();
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JLabel search;
     private javax.swing.JTable tPhong;
     private javax.swing.JTextField txtDesc;
     private javax.swing.JTextField txtPrice;
