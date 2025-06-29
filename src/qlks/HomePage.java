@@ -1181,6 +1181,7 @@ public void filterInvoices() {
                 "Mã hoá đơn ", "Mã đặt phòng ", "Mã khách hàng ", "Ngày lập", "Tiền phòng ", "Tiền dịch vụ ", "Tổng cộng ", "Phương thức TT", "Ngày TT", "Mã nhân viên"
             }
         ));
+        tHoaDon.setEnabled(false);
         jScrollPane1.setViewportView(tHoaDon);
 
         jPanel5.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 120, 970, 450));
