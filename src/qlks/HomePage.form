@@ -516,7 +516,7 @@
                   </Events>
                   <Constraints>
                     <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-                      <AbsoluteConstraints x="340" y="350" width="90" height="210"/>
+                      <AbsoluteConstraints x="340" y="350" width="100" height="210"/>
                     </Constraint>
                   </Constraints>
                 </Component>
@@ -932,7 +932,7 @@
                   </Events>
                   <Constraints>
                     <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-                      <AbsoluteConstraints x="340" y="20" width="90" height="100"/>
+                      <AbsoluteConstraints x="340" y="20" width="100" height="100"/>
                     </Constraint>
                   </Constraints>
                 </Component>
@@ -962,7 +962,7 @@
                   </Events>
                   <Constraints>
                     <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-                      <AbsoluteConstraints x="340" y="130" width="90" height="210"/>
+                      <AbsoluteConstraints x="340" y="130" width="100" height="210"/>
                     </Constraint>
                   </Constraints>
                 </Component>
@@ -1381,7 +1381,7 @@
             <Container class="javax.swing.JPanel" name="jPanel5">
               <Properties>
                 <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
-                  <Color blue="ff" green="ff" red="ff" type="rgb"/>
+                  <Color blue="f6" green="fb" red="fd" type="rgb"/>
                 </Property>
                 <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
                   <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
@@ -1396,7 +1396,6 @@
                     </TitledBorder>
                   </Border>
                 </Property>
-                <Property name="opaque" type="boolean" value="false"/>
               </Properties>
               <Constraints>
                 <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
@@ -1691,11 +1690,16 @@
               <SubComponents>
                 <Component class="javax.swing.JTextPane" name="jTextPane1">
                   <Properties>
+                    <Property name="editable" type="boolean" value="false"/>
+                    <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+                      <Color blue="f6" green="fb" red="fd" type="rgb"/>
+                    </Property>
                     <Property name="contentType" type="java.lang.String" value="text/html" noResource="true"/>
                     <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
                       <Font name="Segoe UI" size="24" style="0"/>
                     </Property>
-                    <Property name="text" type="java.lang.String" value="&lt;html&gt;     &lt;body style=&apos;font-family: Times New Roman; color: black;&apos;&gt;         &lt;div style=&apos;text-align: center;&apos;&gt;             &lt;h2 style=&apos;margin-bottom: 5px;&apos;&gt;TR&#x1af;&#x1edc;NG &#x110;&#x1ea0;I H&#x1ecc;C KINH T&#x1ebe; - K&#x1ef8; THU&#x1eac;T C&#xd4;NG NGHI&#x1ec6;P&lt;/h2&gt;             &lt;h3 style=&apos;margin-top: 0;&apos;&gt;KHOA C&#xd4;NG NGH&#x1ec6; TH&#xd4;NG TIN&lt;/h3&gt;             &lt;hr style=&apos;width: 80%; border: 1px solid black;&apos;&gt;&lt;br/&gt;              &lt;h1 style=&apos;margin: 10px 0; color: darkblue;&apos;&gt;B&#xc0;I T&#x1eac;P L&#x1eda;N&lt;/h1&gt;             &lt;h2 style=&apos;text-decoration: underline; color: crimson;&apos;&gt;&#x110;&#x1ec0; T&#xc0;I: H&#x1ec7; th&#x1ed1;ng qu&#x1ea3;n l&#xfd; kh&#xe1;ch s&#x1ea1;n&lt;/h2&gt;&lt;br/&gt;              &lt;p style=&apos;text-align: left; margin-left: 150px;&apos;&gt;                 &lt;b&gt;Gi&#x1ea3;ng vi&#xea;n h&#x1b0;&#x1edb;ng d&#x1eab;n:&lt;/b&gt; Th.S. Tr&#x1ea7;n Th&#x1ecb; Lan Anh&lt;br/&gt;&lt;br/&gt;                 &lt;b&gt;Nh&#xf3;m sinh vi&#xea;n th&#x1ef1;c hi&#x1ec7;n:&lt;/b&gt;&lt;br/&gt;                 &amp;emsp;- L&#x1b0;&#x1a1;ng Minh S&#x1a1;n&lt;br/&gt;                 &amp;emsp;- Tr&#x1b0;&#x1a1;ng Do&#xe3;n An&lt;br/&gt;                 &amp;emsp;- Nguy&#x1ec5;n H&#x1eef;u Th&#xe0;nh Danh&lt;br/&gt;&lt;br/&gt;                 &lt;b&gt;Nh&#xf3;m:&lt;/b&gt; 3&lt;br/&gt;                 &lt;b&gt;Khoa:&lt;/b&gt; C&#xf4;ng ngh&#x1ec7; th&#xf4;ng tin             &lt;/p&gt;         &lt;/div&gt;     &lt;/body&gt; &lt;/html&gt;"/>
+                    <Property name="text" type="java.lang.String" value="&lt;html&gt;        &lt;body style=&apos;font-family: Times New Roman; color: black; font-size: 24pt;&apos;&gt;              &lt;div style=&apos;text-align: center;&apos;&gt;                    &lt;h2 style=&apos;margin-bottom: 5px;&apos;&gt;TR&#x1af;&#x1edc;NG &#x110;&#x1ea0;I H&#x1ecc;C KINH T&#x1ebe; - K&#x1ef8; THU&#x1eac;T C&#xd4;NG NGHI&#x1ec6;P&lt;/h2&gt;                    &lt;h3 style=&apos;margin-top: 0;&apos;&gt;KHOA C&#xd4;NG NGH&#x1ec6; TH&#xd4;NG TIN&lt;/h3&gt;                    &lt;hr style=&apos;width: 80%; border: 1px solid black;&apos;&gt;&lt;br/&gt;                     &lt;h1 style=&apos;margin: 10px 0; color: darkblue;&apos;&gt;&#x110;&#x1ed2; &#xc1;N 1&lt;/h1&gt;                    &lt;h2 style=&apos;text-decoration: underline; color: crimson;&apos;&gt;&#x110;&#x1ec0; T&#xc0;I: H&#x1ec7; th&#x1ed1;ng qu&#x1ea3;n l&#xfd; kh&#xe1;ch s&#x1ea1;n&lt;/h2&gt;&lt;br/&gt;                     &lt;p style=&apos;text-align: left; margin-left: 150px;&apos;&gt;                          &lt;b&gt;Gi&#x1ea3;ng vi&#xea;n h&#x1b0;&#x1edb;ng d&#x1eab;n:&lt;/b&gt; Th.S. Tr&#x1ea7;n Th&#x1ecb; Lan Anh&lt;br/&gt;&lt;br/&gt;                          &lt;b&gt;Nh&#xf3;m sinh vi&#xea;n th&#x1ef1;c hi&#x1ec7;n:&lt;/b&gt;&lt;br/&gt;                          &amp;emsp;- L&#x1b0;&#x1a1;ng Minh S&#x1a1;n&lt;br/&gt;                          &amp;emsp;- Tr&#x1b0;&#x1a1;ng Do&#xe3;n An&lt;br/&gt;                          &amp;emsp;- Nguy&#x1ec5;n H&#x1eef;u Th&#xe0;nh Danh&lt;br/&gt;&lt;br/&gt;                          &lt;b&gt;Nh&#xf3;m:&lt;/b&gt; 3&lt;br/&gt;                          &lt;b&gt;Khoa:&lt;/b&gt; C&#xf4;ng ngh&#x1ec7; th&#xf4;ng tin                    &lt;/p&gt;              &lt;/div&gt;        &lt;/body&gt;  &lt;/html&gt; "/>
+                    <Property name="toolTipText" type="java.lang.String" value=""/>
                   </Properties>
                 </Component>
               </SubComponents>

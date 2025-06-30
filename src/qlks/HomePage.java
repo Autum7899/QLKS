@@ -791,7 +791,7 @@ public void filterInvoices() {
                 StandardActionPerformed(evt);
             }
         });
-        pnlRoomLayout.add(Standard, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 350, 90, 210));
+        pnlRoomLayout.add(Standard, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 350, 100, 210));
 
         p501.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         p501.setText("501");
@@ -1004,7 +1004,7 @@ public void filterInvoices() {
                 SuiteActionPerformed(evt);
             }
         });
-        pnlRoomLayout.add(Suite, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 20, 90, 100));
+        pnlRoomLayout.add(Suite, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 20, 100, 100));
 
         Deluxe.setBackground(new java.awt.Color(9, 38, 41));
         Deluxe.setFont(new java.awt.Font("Segoe UI", 1, 12)); // NOI18N
@@ -1019,7 +1019,7 @@ public void filterInvoices() {
                 DeluxeActionPerformed(evt);
             }
         });
-        pnlRoomLayout.add(Deluxe, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 130, 90, 210));
+        pnlRoomLayout.add(Deluxe, new org.netbeans.lib.awtextra.AbsoluteConstraints(340, 130, 100, 210));
 
         jTextField7.setEditable(false);
         jTextField7.setBackground(new java.awt.Color(239, 68, 68));
@@ -1185,9 +1185,8 @@ public void filterInvoices() {
         jPanel10.setBackground(new java.awt.Color(252, 244, 234));
         jPanel10.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        jPanel5.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel5.setBackground(new java.awt.Color(253, 251, 246));
         jPanel5.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Thống kê hóa đơn", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
-        jPanel5.setOpaque(false);
         jPanel5.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         tHoaDon.setModel(new javax.swing.table.DefaultTableModel(
@@ -1265,9 +1264,12 @@ public void filterInvoices() {
         jPanel11.setBackground(new java.awt.Color(252, 244, 234));
         jPanel11.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
+        jTextPane1.setEditable(false);
+        jTextPane1.setBackground(new java.awt.Color(253, 251, 246));
         jTextPane1.setContentType("text/html"); // NOI18N
         jTextPane1.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
-        jTextPane1.setText("<html>     <body style='font-family: Times New Roman; color: black;'>         <div style='text-align: center;'>             <h2 style='margin-bottom: 5px;'>TRƯỜNG ĐẠI HỌC KINH TẾ - KỸ THUẬT CÔNG NGHIỆP</h2>             <h3 style='margin-top: 0;'>KHOA CÔNG NGHỆ THÔNG TIN</h3>             <hr style='width: 80%; border: 1px solid black;'><br/>              <h1 style='margin: 10px 0; color: darkblue;'>BÀI TẬP LỚN</h1>             <h2 style='text-decoration: underline; color: crimson;'>ĐỀ TÀI: Hệ thống quản lý khách sạn</h2><br/>              <p style='text-align: left; margin-left: 150px;'>                 <b>Giảng viên hướng dẫn:</b> Th.S. Trần Thị Lan Anh<br/><br/>                 <b>Nhóm sinh viên thực hiện:</b><br/>                 &emsp;- Lương Minh Sơn<br/>                 &emsp;- Trương Doãn An<br/>                 &emsp;- Nguyễn Hữu Thành Danh<br/><br/>                 <b>Nhóm:</b> 3<br/>                 <b>Khoa:</b> Công nghệ thông tin             </p>         </div>     </body> </html>");
+        jTextPane1.setText("<html>        <body style='font-family: Times New Roman; color: black; font-size: 24pt;'>              <div style='text-align: center;'>                    <h2 style='margin-bottom: 5px;'>TRƯỜNG ĐẠI HỌC KINH TẾ - KỸ THUẬT CÔNG NGHIỆP</h2>                    <h3 style='margin-top: 0;'>KHOA CÔNG NGHỆ THÔNG TIN</h3>                    <hr style='width: 80%; border: 1px solid black;'><br/>                     <h1 style='margin: 10px 0; color: darkblue;'>ĐỒ ÁN 1</h1>                    <h2 style='text-decoration: underline; color: crimson;'>ĐỀ TÀI: Hệ thống quản lý khách sạn</h2><br/>                     <p style='text-align: left; margin-left: 150px;'>                          <b>Giảng viên hướng dẫn:</b> Th.S. Trần Thị Lan Anh<br/><br/>                          <b>Nhóm sinh viên thực hiện:</b><br/>                          &emsp;- Lương Minh Sơn<br/>                          &emsp;- Trương Doãn An<br/>                          &emsp;- Nguyễn Hữu Thành Danh<br/><br/>                          <b>Nhóm:</b> 3<br/>                          <b>Khoa:</b> Công nghệ thông tin                    </p>              </div>        </body>  </html> ");
+        jTextPane1.setToolTipText("");
         jScrollPane3.setViewportView(jTextPane1);
 
         jPanel11.add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, 950, 590));
@@ -1507,6 +1509,7 @@ public void filterInvoices() {
 
     private void statisticMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statisticMouseClicked
         // TODO add your handling code here:
+        jTabbedPane1.setSelectedIndex(2);
     }//GEN-LAST:event_statisticMouseClicked
 
     /**
