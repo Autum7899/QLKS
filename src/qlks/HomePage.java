@@ -508,11 +508,13 @@ public void filterInvoices() {
         signout = new javax.swing.JLabel();
         displayUsername = new javax.swing.JLabel();
         Logo = new javax.swing.JLabel();
-        statistic = new qlks.HoverLabel("Your Text Here")
+        info = new qlks.HoverLabel("Your Text Here")
         ;
         homepage = new qlks.HoverLabel("Your Text Here")
         ;
         manage = new qlks.HoverLabel("Your Text Here")
+        ;
+        statistic = new qlks.HoverLabel("Your Text Here")
         ;
         jPanel2 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
@@ -577,6 +579,8 @@ public void filterInvoices() {
         cmbPayment = new javax.swing.JComboBox<>();
         lTotal2 = new javax.swing.JLabel();
         jPanel11 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        jTextPane1 = new javax.swing.JTextPane();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -641,22 +645,22 @@ public void filterInvoices() {
         Logo.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         jPanel1.add(Logo, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 190, 120));
 
-        statistic.setBackground(new java.awt.Color(9, 38, 41));
-        statistic.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        statistic.setForeground(new java.awt.Color(255, 255, 255));
-        statistic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        statistic.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/growth.png"))); // NOI18N
-        statistic.setText("Thống kê");
-        statistic.setToolTipText("");
-        statistic.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        statistic.setFocusable(false);
-        statistic.setOpaque(true);
-        statistic.addMouseListener(new java.awt.event.MouseAdapter() {
+        info.setBackground(new java.awt.Color(9, 38, 41));
+        info.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        info.setForeground(new java.awt.Color(255, 255, 255));
+        info.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        info.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/info.png"))); // NOI18N
+        info.setText("Thông tin");
+        info.setToolTipText("");
+        info.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        info.setFocusable(false);
+        info.setOpaque(true);
+        info.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                statisticMouseClicked(evt);
+                infoMouseClicked(evt);
             }
         });
-        jPanel1.add(statistic, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 240, 190, 60));
+        jPanel1.add(info, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 300, 190, 60));
 
         homepage.setBackground(new java.awt.Color(9, 38, 41));
         homepage.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -687,6 +691,23 @@ public void filterInvoices() {
             }
         });
         jPanel1.add(manage, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 180, 190, 60));
+
+        statistic.setBackground(new java.awt.Color(9, 38, 41));
+        statistic.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        statistic.setForeground(new java.awt.Color(255, 255, 255));
+        statistic.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        statistic.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/growth.png"))); // NOI18N
+        statistic.setText("Thống kê");
+        statistic.setToolTipText("");
+        statistic.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        statistic.setFocusable(false);
+        statistic.setOpaque(true);
+        statistic.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                statisticMouseClicked(evt);
+            }
+        });
+        jPanel1.add(statistic, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 240, 190, 60));
 
         getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 190, 700));
 
@@ -1043,7 +1064,6 @@ public void filterInvoices() {
 
         jPanel4.setBackground(new java.awt.Color(255, 255, 255));
         jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "lối tắt", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
-        jPanel4.setOpaque(false);
         jPanel4.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         btnAddCustomer.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -1243,17 +1263,14 @@ public void filterInvoices() {
         jTabbedPane1.addTab("tab3", jPanel10);
 
         jPanel11.setBackground(new java.awt.Color(252, 244, 234));
+        jPanel11.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
-        jPanel11.setLayout(jPanel11Layout);
-        jPanel11Layout.setHorizontalGroup(
-            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1020, Short.MAX_VALUE)
-        );
-        jPanel11Layout.setVerticalGroup(
-            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 645, Short.MAX_VALUE)
-        );
+        jTextPane1.setContentType("text/html"); // NOI18N
+        jTextPane1.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
+        jTextPane1.setText("<html>     <body style='font-family: Times New Roman; color: black;'>         <div style='text-align: center;'>             <h2 style='margin-bottom: 5px;'>TRƯỜNG ĐẠI HỌC KINH TẾ - KỸ THUẬT CÔNG NGHIỆP</h2>             <h3 style='margin-top: 0;'>KHOA CÔNG NGHỆ THÔNG TIN</h3>             <hr style='width: 80%; border: 1px solid black;'><br/>              <h1 style='margin: 10px 0; color: darkblue;'>BÀI TẬP LỚN</h1>             <h2 style='text-decoration: underline; color: crimson;'>ĐỀ TÀI: Hệ thống quản lý khách sạn</h2><br/>              <p style='text-align: left; margin-left: 150px;'>                 <b>Giảng viên hướng dẫn:</b> Th.S. Trần Thị Lan Anh<br/><br/>                 <b>Nhóm sinh viên thực hiện:</b><br/>                 &emsp;- Lương Minh Sơn<br/>                 &emsp;- Trương Doãn An<br/>                 &emsp;- Nguyễn Hữu Thành Danh<br/><br/>                 <b>Nhóm:</b> 3<br/>                 <b>Khoa:</b> Công nghệ thông tin             </p>         </div>     </body> </html>");
+        jScrollPane3.setViewportView(jTextPane1);
+
+        jPanel11.add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 30, 950, 590));
 
         jTabbedPane1.addTab("tab4", jPanel11);
 
@@ -1355,10 +1372,10 @@ public void filterInvoices() {
          jTabbedPane1.setSelectedIndex(1);
     }//GEN-LAST:event_manageMouseClicked
 
-    private void statisticMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statisticMouseClicked
+    private void infoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_infoMouseClicked
         // TODO add your handling code here:
-         jTabbedPane1.setSelectedIndex(2);
-    }//GEN-LAST:event_statisticMouseClicked
+         jTabbedPane1.setSelectedIndex(3);
+    }//GEN-LAST:event_infoMouseClicked
 
     private void p502ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_p502ActionPerformed
         // TODO add your handling code here:
@@ -1488,6 +1505,10 @@ public void filterInvoices() {
         filterInvoices();
     }//GEN-LAST:event_btnLoc1ActionPerformed
 
+    private void statisticMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statisticMouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_statisticMouseClicked
+
     /**
      * @param args the command line arguments
      */
@@ -1539,6 +1560,7 @@ public void filterInvoices() {
     private javax.swing.JButton customer;
     private javax.swing.JLabel displayUsername;
     private javax.swing.JLabel homepage;
+    private javax.swing.JLabel info;
     private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
@@ -1561,9 +1583,11 @@ public void filterInvoices() {
     private javax.swing.JPanel jPanel9;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField7;
+    private javax.swing.JTextPane jTextPane1;
     private com.toedter.calendar.JDateChooser jdcFrom;
     private com.toedter.calendar.JDateChooser jdcTo;
     private javax.swing.JLabel lTotal1;
