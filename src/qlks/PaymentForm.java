@@ -51,6 +51,7 @@ public class PaymentForm extends RoundedFrame {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
         paymentMethod = cmbPayment.getSelectedItem().toString();  
+        InvoiceDAO.showEstimateInvoice(bookingId, tInvoice, lTotal);
     }
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -58,14 +59,20 @@ public class PaymentForm extends RoundedFrame {
         jMenuItem1 = new javax.swing.JMenuItem();
         jOptionPane1 = new javax.swing.JOptionPane();
         jPanel2 = new javax.swing.JPanel();
-        close = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         btnThem = new RoundedButton();
         cmbPayment = new javax.swing.JComboBox<>();
+        jPanel4 = new javax.swing.JPanel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        tInvoice = new ThemedTable();
+        lTotal = new javax.swing.JLabel();
+        close = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -74,6 +81,7 @@ public class PaymentForm extends RoundedFrame {
         setBackground(new java.awt.Color(252, 244, 234));
         setIconImage(new ImageIcon(getClass().getResource("/Icon/Title.png")).getImage());
         setUndecorated(true);
+        setPreferredSize(new java.awt.Dimension(600, 600));
         setResizable(false);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
@@ -91,25 +99,11 @@ public class PaymentForm extends RoundedFrame {
         });
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        close.setBackground(new java.awt.Color(252, 244, 234));
-        close.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
-        close.setForeground(new java.awt.Color(0, 77, 79));
-        close.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        close.setText("X");
-        close.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        close.setOpaque(true);
-        close.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                closeMouseClicked(evt);
-            }
-        });
-        jPanel2.add(close, new org.netbeans.lib.awtextra.AbsoluteConstraints(440, 0, 60, 60));
-
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
         jPanel2.add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 250, 60));
 
-        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
-        jPanel2.add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 0, 250, 60));
+        jLabel6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
+        jPanel2.add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 0, 250, 60));
 
         getContentPane().add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 500, 60));
 
@@ -122,7 +116,7 @@ public class PaymentForm extends RoundedFrame {
 
         jLabel5.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         jLabel5.setText("Phương thức thanh toán");
-        jPanel3.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(130, 20, 210, 30));
+        jPanel3.add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, 210, 30));
 
         btnThem.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnThem.setForeground(new java.awt.Color(255, 255, 255));
@@ -133,7 +127,7 @@ public class PaymentForm extends RoundedFrame {
                 btnThemActionPerformed(evt);
             }
         });
-        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(170, 120, -1, -1));
+        jPanel3.add(btnThem, new org.netbeans.lib.awtextra.AbsoluteConstraints(280, 20, 280, 70));
 
         cmbPayment.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tiền mặt", "Chuyển khoản", "Thẻ tín dụng" }));
         cmbPayment.addActionListener(new java.awt.event.ActionListener() {
@@ -141,13 +135,82 @@ public class PaymentForm extends RoundedFrame {
                 cmbPaymentActionPerformed(evt);
             }
         });
-        jPanel3.add(cmbPayment, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 50, 240, 40));
+        jPanel3.add(cmbPayment, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, 240, 40));
 
-        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 450, 180));
+        jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 580, 580, 110));
 
-        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 60, 500, 210));
+        jPanel4.setBackground(new java.awt.Color(253, 251, 246));
+        jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Hóa đơn tạm tính", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 18), new java.awt.Color(0, 77, 79))); // NOI18N
+        jPanel4.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jPanel4MouseClicked(evt);
+            }
+        });
 
-        setSize(new java.awt.Dimension(500, 270));
+        tInvoice.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Dịch vụ", "	Số lượng", "Đơn giá	", "Thành tiền "
+            }
+        ));
+        jScrollPane2.setViewportView(tInvoice);
+
+        lTotal.setBackground(new java.awt.Color(253, 251, 246));
+        lTotal.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lTotal.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
+        lTotal.setText("Total");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 570, Short.MAX_VALUE)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(lTotal, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lTotal)
+                .addGap(13, 13, 13))
+        );
+
+        jPanel1.add(jPanel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 0, -1, 570));
+
+        getContentPane().add(jPanel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 60, 620, 720));
+
+        close.setBackground(new java.awt.Color(252, 244, 234));
+        close.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
+        close.setForeground(new java.awt.Color(0, 77, 79));
+        close.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        close.setText("X");
+        close.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        close.setOpaque(true);
+        close.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                closeMouseClicked(evt);
+            }
+        });
+        getContentPane().add(close, new org.netbeans.lib.awtextra.AbsoluteConstraints(560, 0, 60, 60));
+
+        jLabel7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
+        getContentPane().add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 0, 250, 60));
+
+        jLabel4.setBackground(new java.awt.Color(252, 244, 234));
+        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/floral.png"))); // NOI18N
+        jLabel4.setOpaque(true);
+        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 0, 250, 60));
+
+        setSize(new java.awt.Dimension(619, 771));
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
@@ -193,6 +256,10 @@ if (confirm == JOptionPane.YES_OPTION) {
     private void cmbPaymentActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbPaymentActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_cmbPaymentActionPerformed
+
+    private void jPanel4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanel4MouseClicked
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jPanel4MouseClicked
 
     /**
      * @param args the command line arguments
@@ -491,10 +558,16 @@ if (confirm == JOptionPane.YES_OPTION) {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JOptionPane jOptionPane1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JLabel lTotal;
+    private javax.swing.JTable tInvoice;
     // End of variables declaration//GEN-END:variables
 }
