@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import javax.swing.ImageIcon;
 import java.awt.Image;
+import org.mindrot.jbcrypt.BCrypt;
 
 
 
@@ -219,7 +220,6 @@ public class Login extends RoundedFrame {
         JOptionPane.showMessageDialog(this, "Please enter both username and password.", "Login Error", JOptionPane.ERROR_MESSAGE);
         return;
     }
-
     // Call the login check method
     if (checkLogin(username, password)) {
         // Login successful
@@ -265,36 +265,26 @@ public class Login extends RoundedFrame {
      * @param args the command line arguments
      */
 private boolean checkLogin(String username, String password) {
-    // The SQL query is built to match the schema in qlks.sql.
-    String sql = "SELECT PasswordHash, Role FROM users WHERE Username = ?"; //
-
+    String sql = "SELECT PasswordHash, Role FROM users WHERE Username = ?"; 
     try (Connection con = DatabaseConnection.getConnection();
          PreparedStatement pst = con.prepareStatement(sql)) {
-
         if (con == null) {
-            return false; // Connection failed
+            return false; 
         }
-        
         pst.setString(1, username);
-
         try (ResultSet rs = pst.executeQuery()) {
             if (rs.next()) {
-                // Username exists, now check the password.
-                String storedPassword = rs.getString("PasswordHash"); //
-
-                // Direct password comparison based on the plain-text data in the .sql file.
-                if (password.equals(storedPassword)) {
-                    // Password matches, save the user's role.
-                    UserInfo.loggedInRole = rs.getString("Role"); //
-                    return true; // Login successful
+                String storedPassword = rs.getString("PasswordHash"); 
+                if (BCrypt.checkpw(password, storedPassword)) {
+                    UserInfo.loggedInRole = rs.getString("Role"); 
+                    return true;
                 } else {
-                    return false; // Password incorrect
+                    return false;
                 }
             } else {
-                return false; // Username does not exist
+                return false;
             }
         }
-
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(null,
                 "Database error during login check: " + e.getMessage(),

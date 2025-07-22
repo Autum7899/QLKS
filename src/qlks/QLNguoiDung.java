@@ -33,6 +33,7 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.table.DefaultTableModel;
+import org.mindrot.jbcrypt.BCrypt;
 import qlks.ThemedTable;
 
 /**
@@ -56,11 +57,13 @@ public class QLNguoiDung extends RoundedFrame {
     }
     public void addUser() {
     String username = txtUsername.getText();
-    String password = txtPassword.getText();
+    String password = new String(txtPassword.getPassword());
     String name = txtName.getText();
     String email = txtMail.getText();
     String phone = txtSDT.getText();
     String role = cmbRole.getSelectedItem().toString();
+
+    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
     String sql = "INSERT INTO users (Username, PasswordHash, FullName, Email, PhoneNumber, Role) VALUES (?, ?, ?, ?, ?, ?)";
 
@@ -68,7 +71,7 @@ public class QLNguoiDung extends RoundedFrame {
          PreparedStatement ps = conn.prepareStatement(sql)) {
 
         ps.setString(1, username);
-        ps.setString(2, password); // nếu bạn mã hóa, xử lý trước tại đây
+        ps.setString(2, hashedPassword);
         ps.setString(3, name);
         ps.setString(4, email);
         ps.setString(5, phone);
@@ -83,11 +86,13 @@ public class QLNguoiDung extends RoundedFrame {
 
     public void updateUser(int userId) {
     String username = txtUsername.getText();
-    String password = txtPassword.getText();
+    String password = new String(txtPassword.getPassword());
     String name = txtName.getText();
     String email = txtMail.getText();
     String phone = txtSDT.getText();
     String role = cmbRole.getSelectedItem().toString();
+
+    String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
     String sql = "UPDATE users SET Username=?, PasswordHash=?, FullName=?, Email=?, PhoneNumber=?, Role=? WHERE UserId=?";
 
@@ -95,7 +100,7 @@ public class QLNguoiDung extends RoundedFrame {
          PreparedStatement ps = conn.prepareStatement(sql)) {
 
         ps.setString(1, username);
-        ps.setString(2, password);
+        ps.setString(2, hashedPassword);
         ps.setString(3, name);
         ps.setString(4, email);
         ps.setString(5, phone);
@@ -202,7 +207,7 @@ public void deleteUser(int userId) {
         jScrollPane1 = new javax.swing.JScrollPane();
         tNguoiDung = new ThemedTable();
         txtUsername = new javax.swing.JTextField();
-        txtPassword = new javax.swing.JTextField();
+        txtPassword = new javax.swing.JPasswordField();
         txtName = new javax.swing.JTextField();
         txtMail = new javax.swing.JTextField();
         jLabel6 = new javax.swing.JLabel();
@@ -353,7 +358,7 @@ public void deleteUser(int userId) {
         jPanel3.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 60, 150, 40));
 
         jLabel10.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        jLabel10.setText("Tên người dùng");
+        jLabel10.setText("Họ tên");
         jPanel3.add(jLabel10, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 180, 150, 40));
 
         jLabel11.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -398,7 +403,7 @@ public void deleteUser(int userId) {
         jPanel3.add(jLabel12, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 300, 150, 40));
         jPanel3.add(txtSDT, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 300, 250, 40));
 
-        cmbRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Admin", "Staff" }));
+        cmbRole.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Admin", "Quản lý", "Lễ tân" }));
         jPanel3.add(cmbRole, new org.netbeans.lib.awtextra.AbsoluteConstraints(200, 360, 250, 40));
 
         jPanel1.add(jPanel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(25, 0, 950, 490));
@@ -1555,7 +1560,7 @@ resetUserFields();
     private javax.swing.JTable tNguoiDung;
     private javax.swing.JTextField txtMail;
     private javax.swing.JTextField txtName;
-    private javax.swing.JTextField txtPassword;
+    private javax.swing.JPasswordField txtPassword;
     private javax.swing.JTextField txtSDT;
     private javax.swing.JTextField txtUsername;
     // End of variables declaration//GEN-END:variables

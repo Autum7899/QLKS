@@ -149,6 +149,7 @@ private void update(){
         java.sql.Date checkOut = new java.sql.Date(jdcCheckOut.getDate().getTime());
 
         try (Connection conn = DatabaseConnection.getConnection()) {
+            //Sửa đặt phòng
             String sql = "UPDATE bookings SET RoomId=?, CustomerId=?, CheckInDate=?, CheckOutDate=? WHERE BookingId=?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setInt(1, selectedRoom.getRoomId());

@@ -60,31 +60,27 @@ public class BookingDAO {
         }
     }); 
     }
-        public static void checkIn(JTable table) {
-        int row = table.getSelectedRow();
+    public static void checkIn(JTable table) {
+    int row = table.getSelectedRow();
     if (row < 0) {
         JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
         return;
     }
-
     String status = table.getValueAt(row, 5).toString(); // Cột 5 là Status
-    if (status.equalsIgnoreCase("Cancelled") || status.equalsIgnoreCase("CheckedIn") || status.equalsIgnoreCase("CheckedOut")) {
+    if (status.equalsIgnoreCase("Cancelled") || 
+        status.equalsIgnoreCase("CheckedIn") || 
+        status.equalsIgnoreCase("CheckedOut")) {
         JOptionPane.showMessageDialog(null, "Không thể nhận phòng với trạng thái: " + status);
         return;
     }
-
     int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
-
     String sql = "UPDATE bookings SET ActualCheckInDate = NOW(), Status = 'CheckedIn' WHERE BookingId = ?";
     try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement stmt = conn.prepareStatement(sql)) {
-
         stmt.setInt(1, bookingId);
         stmt.executeUpdate();
-
         JOptionPane.showMessageDialog(null, "Nhận phòng thành công!");
         loadBookingsToTable(table);
-
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(null, "Lỗi khi nhận phòng: " + e.getMessage());
     }
@@ -93,30 +89,14 @@ public class BookingDAO {
     // Trả phòng
     public static void checkOut(JTable table) {
     int row = table.getSelectedRow();
-    if (row < 0) {
-        JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
-        return;
-    }
-
+    if (row < 0) {JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");return;}
     String status = table.getValueAt(row, 5).toString();
-    if (status.equalsIgnoreCase("Cancelled")) {
-        JOptionPane.showMessageDialog(null, "Đặt phòng đã bị hủy, không thể trả phòng.");
-        return;
-    }
-    if (status.equalsIgnoreCase("CheckedOut")) {
-        JOptionPane.showMessageDialog(null, "Đã trả phòng trước đó.");
-        return;
-    }
-    if (!status.equalsIgnoreCase("CheckedIn")) {
-        JOptionPane.showMessageDialog(null, "Chỉ có thể trả phòng sau khi đã nhận phòng.");
-        return;
-    }
-
+    if (status.equalsIgnoreCase("Cancelled")) {JOptionPane.showMessageDialog(null, "Đặt phòng đã bị hủy, không thể trả phòng.");return;}
+    if (status.equalsIgnoreCase("CheckedOut")) {JOptionPane.showMessageDialog(null, "Đã trả phòng trước đó.");return;}
+    if (!status.equalsIgnoreCase("CheckedIn")) {JOptionPane.showMessageDialog(null, "Chỉ có thể trả phòng sau khi đã nhận phòng.");return;}
     int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
-
     try (Connection conn = DatabaseConnection.getConnection()) {
         conn.setAutoCommit(false); // Start transaction
-
         // 1. Get RoomId of this booking
         int roomId = -1;
         String getRoomIdSQL = "SELECT RoomId FROM bookings WHERE BookingId = ?";
@@ -131,21 +111,18 @@ public class BookingDAO {
                 return;
             }
         }
-
         // 2. Update booking status to 'CheckedOut' and set ActualCheckOutDate
         String updateBookingSQL = "UPDATE bookings SET ActualCheckOutDate = NOW(), Status = 'CheckedOut' WHERE BookingId = ?";
         try (PreparedStatement stmt = conn.prepareStatement(updateBookingSQL)) {
             stmt.setInt(1, bookingId);
             stmt.executeUpdate();
         }
-
         // 3. Update room status to 'Available'
         String updateRoomSQL = "UPDATE rooms SET Status = 'Available' WHERE RoomId = ?";
         try (PreparedStatement stmt = conn.prepareStatement(updateRoomSQL)) {
             stmt.setInt(1, roomId);
             stmt.executeUpdate();
         }
-
         conn.commit(); // Complete transaction
         JOptionPane.showMessageDialog(null, "Trả phòng thành công!");
         loadBookingsToTable(table);
@@ -162,7 +139,6 @@ public class BookingDAO {
         JOptionPane.showMessageDialog(null, "Vui lòng chọn một đặt phòng.");
         return;
     }
-
     String status = table.getValueAt(row, 5).toString(); // Status column
     if (status.equalsIgnoreCase("Cancelled") ||
         status.equalsIgnoreCase("CheckedOut") ||
@@ -170,7 +146,6 @@ public class BookingDAO {
         JOptionPane.showMessageDialog(null, "Chỉ có thể hủy đặt phòng chưa sử dụng.");
         return;
     }
-
     int bookingId = Integer.parseInt(table.getValueAt(row, 0).toString());
 
     int confirm = JOptionPane.showConfirmDialog(
@@ -180,10 +155,8 @@ public class BookingDAO {
         JOptionPane.YES_NO_OPTION
     );
     if (confirm != JOptionPane.YES_OPTION) return;
-
     try (Connection conn = DatabaseConnection.getConnection()) {
         conn.setAutoCommit(false); // bắt đầu giao dịch
-
         // 1. Lấy RoomId của booking này
         int roomId = -1;
         String getRoomIdSQL = "SELECT RoomId FROM bookings WHERE BookingId = ?";
@@ -198,25 +171,21 @@ public class BookingDAO {
                 return;
             }
         }
-
-        // 2. Hủy booking
+        // 2. Hủy đặt phòng
         String cancelSQL = "UPDATE bookings SET Status = 'Cancelled' WHERE BookingId = ?";
         try (PreparedStatement stmt = conn.prepareStatement(cancelSQL)) {
             stmt.setInt(1, bookingId);
             stmt.executeUpdate();
         }
-
         // 3. Cập nhật trạng thái phòng → Available
         String updateRoomSQL = "UPDATE rooms SET Status = 'Available' WHERE RoomId = ?";
         try (PreparedStatement stmt = conn.prepareStatement(updateRoomSQL)) {
             stmt.setInt(1, roomId);
             stmt.executeUpdate();
         }
-
-        conn.commit(); // hoàn tất giao dịch
+        conn.commit(); 
         JOptionPane.showMessageDialog(null, "Hủy đặt phòng thành công!");
         loadBookingsToTable(table);
-
     } catch (SQLException e) {
         e.printStackTrace();
         JOptionPane.showMessageDialog(null, "Lỗi khi hủy đặt phòng: " + e.getMessage());

@@ -57,10 +57,15 @@ public class HomePage extends RoundedFrame {
     public HomePage() {
         super("Phần mềm quản lý khách sạn", 30);
         initComponents();
-        if ("Staff".equals(UserInfo.loggedInRole)) {
-    staff.setEnabled(false);
-    room.setEnabled(false);
-        }     
+        if ("Lễ tân".equals(UserInfo.loggedInRole)) {
+        staff.setEnabled(false);
+        room.setEnabled(false);
+        service.setEnabled(false);
+        statistic.setVisible(false);
+        } else if ("Quản lý".equals(UserInfo.loggedInRole))
+        {
+        staff.setEnabled(false);  
+        }
         loadAllInvoices();
         updateRoomButtonColors(this);
         loadDashboardToTextArea(textActivities);
@@ -431,19 +436,16 @@ public void filterInvoices() {
 
     StringBuilder sql = new StringBuilder("SELECT * FROM invoices WHERE 1=1");
     List<Object> params = new ArrayList<>();
-
     // Nếu có ngày bắt đầu
     if (fromDate != null) {
         sql.append(" AND PaymentDate >= ?");
         params.add(new java.sql.Date(fromDate.getTime()));
     }
-
     // Nếu có ngày kết thúc
     if (toDate != null) {
         sql.append(" AND PaymentDate <= ?");
         params.add(new java.sql.Date(toDate.getTime()));
     }
-
     // Nếu không phải là "Tất cả"
     if (!selectedPayment.equals("Tất cả")) {
         sql.append(" AND PaymentMethod = ?");
@@ -560,6 +562,7 @@ public void filterInvoices() {
         jPanel9 = new javax.swing.JPanel();
         billing = new qlks.RoundedButton();
         booking = new qlks.RoundedButton();
+        jPanel6 = new javax.swing.JPanel();
         service = new qlks.RoundedButton();
         staff = new qlks.RoundedButton();
         room = new qlks.RoundedButton();
@@ -575,9 +578,11 @@ public void filterInvoices() {
         lTotal1 = new javax.swing.JLabel();
         lblTotalInvoices = new javax.swing.JLabel();
         lTotal3 = new javax.swing.JLabel();
-        btnLoc1 = new RoundedButton();
+        dichvu = new RoundedButton();
         cmbPayment = new javax.swing.JComboBox<>();
         lTotal2 = new javax.swing.JLabel();
+        btnLoc = new RoundedButton();
+        doanhthu = new RoundedButton();
         jPanel11 = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         jTextPane1 = new javax.swing.JTextPane();
@@ -1099,7 +1104,7 @@ public void filterInvoices() {
         billing.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         billing.setForeground(new java.awt.Color(255, 255, 255));
         billing.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/billing.png"))); // NOI18N
-        billing.setText("Hóa đơn & Thanh toán");
+        billing.setText("Quản lý dịch vụ");
         billing.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         billing.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         billing.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1124,10 +1129,15 @@ public void filterInvoices() {
         });
         jPanel9.add(booking, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 20, 430, 290));
 
+        jPanel6.setBackground(new java.awt.Color(253, 251, 246));
+        jPanel6.setBorder(javax.swing.BorderFactory.createTitledBorder(new javax.swing.border.LineBorder(new java.awt.Color(0, 77, 79), 2, true), "Quản lý danh mục", javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION, javax.swing.border.TitledBorder.DEFAULT_POSITION, new java.awt.Font("Segoe UI", 1, 14), new java.awt.Color(0, 77, 79))); // NOI18N
+        jPanel6.setOpaque(false);
+        jPanel6.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
         service.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         service.setForeground(new java.awt.Color(255, 255, 255));
         service.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/service.png"))); // NOI18N
-        service.setText(" Quản lý Dịch vụ");
+        service.setText(" Dịch vụ");
         service.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         service.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         service.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1136,12 +1146,12 @@ public void filterInvoices() {
                 serviceActionPerformed(evt);
             }
         });
-        jPanel9.add(service, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 330, 250, 290));
+        jPanel6.add(service, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 310, 250, 280));
 
         staff.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         staff.setForeground(new java.awt.Color(255, 255, 255));
         staff.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/profile.png"))); // NOI18N
-        staff.setText("Quản lý Người dùng");
+        staff.setText("Người dùng");
         staff.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         staff.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         staff.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1150,12 +1160,12 @@ public void filterInvoices() {
                 staffActionPerformed(evt);
             }
         });
-        jPanel9.add(staff, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 330, 250, 290));
+        jPanel6.add(staff, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 30, 240, 270));
 
         room.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         room.setForeground(new java.awt.Color(255, 255, 255));
         room.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/room.png"))); // NOI18N
-        room.setText("Quản lý Phòng");
+        room.setText("Phòng");
         room.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         room.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         room.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1164,12 +1174,12 @@ public void filterInvoices() {
                 roomActionPerformed(evt);
             }
         });
-        jPanel9.add(room, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 20, 250, 290));
+        jPanel6.add(room, new org.netbeans.lib.awtextra.AbsoluteConstraints(270, 310, 240, 280));
 
         customer.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         customer.setForeground(new java.awt.Color(255, 255, 255));
         customer.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Icon/customer.png"))); // NOI18N
-        customer.setText("Quản lý Khách hàng");
+        customer.setText("Khách hàng");
         customer.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         customer.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         customer.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
@@ -1178,7 +1188,9 @@ public void filterInvoices() {
                 customerActionPerformed(evt);
             }
         });
-        jPanel9.add(customer, new org.netbeans.lib.awtextra.AbsoluteConstraints(750, 20, 250, 290));
+        jPanel6.add(customer, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 30, 250, 270));
+
+        jPanel9.add(jPanel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(480, 20, 520, 600));
 
         jTabbedPane1.addTab("tab2", jPanel9);
 
@@ -1203,14 +1215,14 @@ public void filterInvoices() {
         tHoaDon.setEnabled(false);
         jScrollPane1.setViewportView(tHoaDon);
 
-        jPanel5.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 120, 970, 450));
+        jPanel5.add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 120, 970, 320));
         jPanel5.add(jdcFrom, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 50, 240, 40));
         jPanel5.add(jdcTo, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 50, 230, 40));
 
         lblGrandTotal.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblGrandTotal.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         lblGrandTotal.setText("Tổng doanh thu");
-        jPanel5.add(lblGrandTotal, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 570, 300, 40));
+        jPanel5.add(lblGrandTotal, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 440, 300, 40));
 
         btnExport.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         btnExport.setForeground(new java.awt.Color(255, 255, 255));
@@ -1231,23 +1243,23 @@ public void filterInvoices() {
         lblTotalInvoices.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         lblTotalInvoices.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         lblTotalInvoices.setText("Số hóa đơn");
-        jPanel5.add(lblTotalInvoices, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 570, 200, 40));
+        jPanel5.add(lblTotalInvoices, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 440, 200, 40));
 
         lTotal3.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         lTotal3.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lTotal3.setText("Từ ngày");
         jPanel5.add(lTotal3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 20, -1, 30));
 
-        btnLoc1.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
-        btnLoc1.setForeground(new java.awt.Color(255, 255, 255));
-        btnLoc1.setText("Lọc");
-        btnLoc1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnLoc1.addActionListener(new java.awt.event.ActionListener() {
+        dichvu.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        dichvu.setForeground(new java.awt.Color(255, 255, 255));
+        dichvu.setText("Báo cáo dịch vụ");
+        dichvu.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        dichvu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnLoc1ActionPerformed(evt);
+                dichvuActionPerformed(evt);
             }
         });
-        jPanel5.add(btnLoc1, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 50, 80, 40));
+        jPanel5.add(dichvu, new org.netbeans.lib.awtextra.AbsoluteConstraints(310, 510, 250, 80));
 
         cmbPayment.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tất cả", "Tiền mặt", "Chuyển khoản", "Thẻ tín dụng" }));
         jPanel5.add(cmbPayment, new org.netbeans.lib.awtextra.AbsoluteConstraints(500, 50, 130, 40));
@@ -1257,7 +1269,29 @@ public void filterInvoices() {
         lTotal2.setText("Đến ngày");
         jPanel5.add(lTotal2, new org.netbeans.lib.awtextra.AbsoluteConstraints(260, 20, -1, 30));
 
-        jPanel10.add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 10, 990, 620));
+        btnLoc.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        btnLoc.setForeground(new java.awt.Color(255, 255, 255));
+        btnLoc.setText("Lọc");
+        btnLoc.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnLoc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnLocActionPerformed(evt);
+            }
+        });
+        jPanel5.add(btnLoc, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 50, 80, 40));
+
+        doanhthu.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        doanhthu.setForeground(new java.awt.Color(255, 255, 255));
+        doanhthu.setText("Báo cáo doanh thu");
+        doanhthu.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        doanhthu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                doanhthuActionPerformed(evt);
+            }
+        });
+        jPanel5.add(doanhthu, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 510, 250, 80));
+
+        jPanel10.add(jPanel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 20, 990, 620));
 
         jTabbedPane1.addTab("tab3", jPanel10);
 
@@ -1502,15 +1536,27 @@ public void filterInvoices() {
     loadAllInvoices();
     }//GEN-LAST:event_btnExportActionPerformed
 
-    private void btnLoc1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoc1ActionPerformed
+    private void dichvuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dichvuActionPerformed
         // TODO add your handling code here:
-        filterInvoices();
-    }//GEN-LAST:event_btnLoc1ActionPerformed
+        Report report = new Report("dichvu");
+            report.setVisible(true);
+    }//GEN-LAST:event_dichvuActionPerformed
 
     private void statisticMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_statisticMouseClicked
         // TODO add your handling code here:
         jTabbedPane1.setSelectedIndex(2);
     }//GEN-LAST:event_statisticMouseClicked
+
+    private void btnLocActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLocActionPerformed
+        // TODO add your handling code here:
+        filterInvoices();
+    }//GEN-LAST:event_btnLocActionPerformed
+
+    private void doanhthuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_doanhthuActionPerformed
+        // TODO add your handling code here:
+        Report report = new Report("doanhthu");
+            report.setVisible(true);
+    }//GEN-LAST:event_doanhthuActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1557,11 +1603,13 @@ public void filterInvoices() {
     private javax.swing.JButton btnAddBooking;
     private javax.swing.JButton btnAddCustomer;
     private javax.swing.JButton btnExport;
-    private javax.swing.JButton btnLoc1;
+    private javax.swing.JButton btnLoc;
     private javax.swing.JLabel close;
     private javax.swing.JComboBox<String> cmbPayment;
     private javax.swing.JButton customer;
+    private javax.swing.JButton dichvu;
     private javax.swing.JLabel displayUsername;
+    private javax.swing.JButton doanhthu;
     private javax.swing.JLabel homepage;
     private javax.swing.JLabel info;
     private javax.swing.JButton jButton6;
@@ -1582,6 +1630,7 @@ public void filterInvoices() {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel6;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
     private javax.swing.JScrollPane jScrollPane1;
